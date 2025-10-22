@@ -69,11 +69,3 @@ pkg-config-assimp:
 .PHONY: brew-assimp-version
 brew-assimp-version:
 	@echo `brew info assimp | head -1 | awk '{ print $$3; }'`
-
-.PHONY: copyMacPkgConfig500
-copyMacPkgConfig500:
-	sudo cp ${PWD}/assimp5.0.0.mac.pc /usr/local/lib/pkgconfig/assimp.pc
-
-.PHONY: copyMacPkgConfig501
-copyMacPkgConfig501:
-	sudo cp ${PWD}/assimp5.0.1.mac.pc /usr/local/lib/pkgconfig/assimp.pc

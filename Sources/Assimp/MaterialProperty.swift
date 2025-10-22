@@ -2,12 +2,12 @@
 // AiMaterialProperty.swift
 // SwiftAssimp
 //
-// Copyright © 2019-2023 Christian Treffs. All rights reserved.
+// Copyright © 2019-2022 Christian Treffs. All rights reserved.
 // Licensed under BSD 3-Clause License. See LICENSE file for details.
 
 @_implementationOnly import CAssimp
 
-public protocol AiMaterialPropertyIdentifiable {
+public protocol MaterialPropertyIdentifiable {
     /// Specifies the name of the property (key) Keys are generally case insensitive.
     var key: String { get }
 
@@ -17,7 +17,7 @@ public protocol AiMaterialPropertyIdentifiable {
 
     /// Textures: Specifies their exact usage semantic.
     /// For non-texture properties, this member is always 0 (or, better-said, #aiTextureType_NONE).
-    var semantic: AiTextureType { get }
+    var semantic: TextureType { get }
 
     /// Type information for the property.
     ///
@@ -26,12 +26,12 @@ public protocol AiMaterialPropertyIdentifiable {
     /// utilize proper type conversions.
     ///
     /// (It's probably a hacky solution, but it works.)
-    var type: AiMaterialProperty.TypeInfo { get }
+    var type: MaterialProperty.TypeInfo { get }
 
-    init(_ property: AiMaterialProperty)
+    init(_ property: MaterialProperty)
 }
 
-public struct AiMaterialProperty: AiMaterialPropertyIdentifiable {
+public class MaterialProperty: MaterialPropertyIdentifiable {
     public struct TypeInfo: RawRepresentable, Equatable, CustomDebugStringConvertible {
         public let rawValue: UInt32
 
@@ -63,31 +63,31 @@ public struct AiMaterialProperty: AiMaterialPropertyIdentifiable {
         }
     }
 
-    var property: aiMaterialProperty
+    private let propertyPtr: UnsafePointer<aiMaterialProperty>
 
     init(_ aiMaterialProperty: aiMaterialProperty) {
-        property = aiMaterialProperty
+        propertyPtr = withUnsafePointer(to: aiMaterialProperty) { UnsafePointer($0) }
     }
 
-    public init(_ property: AiMaterialProperty) {
-        self.property = property.property
+  required public init(_ property: MaterialProperty) {
+        propertyPtr = property.propertyPtr
     }
 
     /// Specifies the name of the property (key) Keys are generally case insensitive.
     public var key: String {
-        String(property.mKey) ?? ""
+        String(propertyPtr.pointee.mKey) ?? ""
     }
 
     /// Textures: Specifies the index of the texture.
     /// For non-texture properties, this member is always 0.
     public var index: Int {
-        Int(property.mIndex)
+        Int(propertyPtr.pointee.mIndex)
     }
 
     /// Textures: Specifies their exact usage semantic.
     /// For non-texture properties, this member is always 0 (or, better-said, #aiTextureType_NONE).
-    public var semantic: AiTextureType {
-        AiTextureType(rawValue: property.mSemantic)
+    public var semantic: TextureType {
+        TextureType(rawValue: propertyPtr.pointee.mSemantic)
     }
 
     /// Type information for the property.
@@ -98,25 +98,25 @@ public struct AiMaterialProperty: AiMaterialPropertyIdentifiable {
     ///
     /// (It's probably a hacky solution, but it works.)
     public var type: TypeInfo {
-        TypeInfo(rawValue: property.mType.rawValue)
+        TypeInfo(rawValue: propertyPtr.pointee.mType.rawValue)
     }
 
     /// Size of the buffer mData is pointing to, in bytes.
     ///
     /// This value may not be 0.
     public var dataLength: Int {
-        Int(property.mDataLength)
+        Int(propertyPtr.pointee.mDataLength)
     }
 
     /// Binary buffer to hold the property's value.
     /// The size of the buffer is always mDataLength.
     public var dataBuffer: UnsafeBufferPointer<Int8> {
-        UnsafeBufferPointer<Int8>(start: property.mData,
+        UnsafeBufferPointer<Int8>(start: propertyPtr.pointee.mData,
                                   count: dataLength)
     }
 
     public var string: String? {
-        guard type == .string, dataLength > 0, let ptr = property.mData else {
+        guard type == .string, dataLength > 0, let ptr = propertyPtr.pointee.mData else {
             return nil
         }
         // FIXME: we cut out the array length field and the terminating NULL of the aiString - this is not nice!
@@ -125,13 +125,13 @@ public struct AiMaterialProperty: AiMaterialPropertyIdentifiable {
         return String(bytes: bytes, length: dataLength - 1 - MemoryLayout<Int32>.stride)
     }
 
-    func getString(pMat: UnsafePointer<aiMaterial>) -> String? {
+    internal func getString(pMat: UnsafePointer<aiMaterial>) -> String? {
         var pOut = aiString()
 
         let result = aiGetMaterialString(pMat,
                                          key.withCString { $0 },
-                                         property.mType.rawValue,
-                                         property.mIndex,
+                                         propertyPtr.pointee.mType.rawValue,
+                                         propertyPtr.pointee.mIndex,
                                          &pOut)
 
         guard result == aiReturn_SUCCESS else {
@@ -141,7 +141,7 @@ public struct AiMaterialProperty: AiMaterialPropertyIdentifiable {
     }
 
     public var double: [Double] {
-        guard type == .double, dataLength > 0, let ptr = property.mData else {
+        guard type == .double, dataLength > 0, let ptr = propertyPtr.pointee.mData else {
             return []
         }
 
@@ -149,7 +149,7 @@ public struct AiMaterialProperty: AiMaterialPropertyIdentifiable {
     }
 
     public var float: [Float32] {
-        guard type == .float, dataLength > 0, let ptr = property.mData else {
+        guard type == .float, dataLength > 0, let ptr = propertyPtr.pointee.mData else {
             return []
         }
 
@@ -157,7 +157,7 @@ public struct AiMaterialProperty: AiMaterialPropertyIdentifiable {
     }
 
     public var int: [Int32] {
-        guard type == .int, dataLength > 0, let ptr = property.mData else {
+        guard type == .int, dataLength > 0, let ptr = propertyPtr.pointee.mData else {
             return []
         }
 
@@ -165,7 +165,7 @@ public struct AiMaterialProperty: AiMaterialPropertyIdentifiable {
     }
 }
 
-extension AiMaterialProperty: CustomDebugStringConvertible {
+extension MaterialProperty: CustomDebugStringConvertible {
     public var debugDescription: String {
         """
         <AiMaterialProperty
@@ -179,8 +179,8 @@ extension AiMaterialProperty: CustomDebugStringConvertible {
     }
 }
 
-extension AiMaterialProperty: Equatable {
-    public static func == (lhs: AiMaterialProperty, rhs: AiMaterialProperty) -> Bool {
+extension MaterialProperty: Equatable {
+    public static func == (lhs: MaterialProperty, rhs: MaterialProperty) -> Bool {
         lhs.key == rhs.key &&
             lhs.index == rhs.index &&
             lhs.semantic == rhs.semantic &&
@@ -189,14 +189,14 @@ extension AiMaterialProperty: Equatable {
     }
 }
 
-public struct AiMaterialPropertyString: AiMaterialPropertyIdentifiable, CustomDebugStringConvertible {
+public struct AiMaterialPropertyString: MaterialPropertyIdentifiable, CustomDebugStringConvertible {
     public let key: String
     public let index: Int
-    public let semantic: AiTextureType
-    public let type: AiMaterialProperty.TypeInfo
+    public let semantic: TextureType
+    public let type: MaterialProperty.TypeInfo
     public let string: String
 
-    public init(_ property: AiMaterialProperty) {
+    public init(_ property: MaterialProperty) {
         key = property.key
         index = property.index
         semantic = property.semantic
@@ -217,15 +217,15 @@ public struct AiMaterialPropertyString: AiMaterialPropertyIdentifiable, CustomDe
     }
 }
 
-public struct AiMaterialPropertyBuffer: AiMaterialPropertyIdentifiable, CustomDebugStringConvertible {
+public struct AiMaterialPropertyBuffer: MaterialPropertyIdentifiable, CustomDebugStringConvertible {
     public let key: String
     public let index: Int
-    public let semantic: AiTextureType
-    public let type: AiMaterialProperty.TypeInfo
+    public let semantic: TextureType
+    public let type: MaterialProperty.TypeInfo
     public let buffer: UnsafeBufferPointer<Int8>
     public let length: Int
 
-    public init(_ property: AiMaterialProperty) {
+    public init(_ property: MaterialProperty) {
         key = property.key
         index = property.index
         semantic = property.semantic
@@ -247,14 +247,14 @@ public struct AiMaterialPropertyBuffer: AiMaterialPropertyIdentifiable, CustomDe
     }
 }
 
-public struct AiMaterialPropertyDouble: AiMaterialPropertyIdentifiable, CustomDebugStringConvertible {
+public struct AiMaterialPropertyDouble: MaterialPropertyIdentifiable, CustomDebugStringConvertible {
     public let key: String
     public let index: Int
-    public let semantic: AiTextureType
-    public let type: AiMaterialProperty.TypeInfo
+    public let semantic: TextureType
+    public let type: MaterialProperty.TypeInfo
     public let doubles: [Double]
 
-    public init(_ property: AiMaterialProperty) {
+    public init(_ property: MaterialProperty) {
         key = property.key
         index = property.index
         semantic = property.semantic
@@ -275,14 +275,14 @@ public struct AiMaterialPropertyDouble: AiMaterialPropertyIdentifiable, CustomDe
     }
 }
 
-public struct AiMaterialPropertyFloat: AiMaterialPropertyIdentifiable, CustomDebugStringConvertible {
+public struct AiMaterialPropertyFloat: MaterialPropertyIdentifiable, CustomDebugStringConvertible {
     public let key: String
     public let index: Int
-    public let semantic: AiTextureType
-    public let type: AiMaterialProperty.TypeInfo
+    public let semantic: TextureType
+    public let type: MaterialProperty.TypeInfo
     public let floats: [Float32]
 
-    public init(_ property: AiMaterialProperty) {
+    public init(_ property: MaterialProperty) {
         key = property.key
         index = property.index
         semantic = property.semantic
@@ -303,14 +303,14 @@ public struct AiMaterialPropertyFloat: AiMaterialPropertyIdentifiable, CustomDeb
     }
 }
 
-public struct AiMaterialPropertyInt: AiMaterialPropertyIdentifiable, CustomDebugStringConvertible {
+public struct AiMaterialPropertyInt: MaterialPropertyIdentifiable, CustomDebugStringConvertible {
     public let key: String
     public let index: Int
-    public let semantic: AiTextureType
-    public let type: AiMaterialProperty.TypeInfo
+    public let semantic: TextureType
+    public let type: MaterialProperty.TypeInfo
     public let ints: [Int32]
 
-    public init(_ property: AiMaterialProperty) {
+    public init(_ property: MaterialProperty) {
         key = property.key
         index = property.index
         semantic = property.semantic

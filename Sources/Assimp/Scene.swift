@@ -1,13 +1,13 @@
 //
-// AiScene.swift
+// Scene.swift
 // SwiftAssimp
 //
-// Copyright © 2019-2023 Christian Treffs. All rights reserved.
+// Copyright © 2019-2022 Christian Treffs. All rights reserved.
 // Licensed under BSD 3-Clause License. See LICENSE file for details.
 
 @_implementationOnly import CAssimp
 
-public final class AiScene {
+public final class Scene {
     public enum Error: Swift.Error {
         case importFailed(String)
         case importIncomplete(String)
@@ -29,51 +29,49 @@ public final class AiScene {
         public static let allowShared = Flags(rawValue: AI_SCENE_FLAGS_ALLOW_SHARED)
     }
 
-    let scene: aiScene
+    private let scenePtr: UnsafePointer<aiScene>
 
-    public init(file filePath: String, flags: AiPostProcessStep = []) throws {
+    public init(file filePath: String, flags: PostProcessStep = []) throws {
         guard let scenePtr = aiImportFile(filePath, flags.rawValue) else {
             throw Error.importFailed(String(cString: aiGetErrorString()))
         }
-        scene = scenePtr.pointee
-        let flags = Flags(rawValue: Int32(scene.mFlags))
+        self.scenePtr = scenePtr
+        let flags = Flags(rawValue: Int32(scenePtr.pointee.mFlags))
 
         if flags.contains(.incomplete) {
             throw Error.importIncomplete(filePath)
         }
         self.flags = flags
 
-        let numMeshes = Int(scene.mNumMeshes)
-        self.numMeshes = numMeshes
-        let numMaterials = Int(scene.mNumMaterials)
-        self.numMaterials = numMaterials
-        let numAnimations = Int(scene.mNumAnimations)
-        self.numAnimations = numAnimations
-        let numTextures = Int(scene.mNumTextures)
-        self.numTextures = numTextures
-        let numLights = Int(scene.mNumLights)
-        self.numLights = numLights
-        let numCameras = Int(scene.mNumCameras)
-        self.numCameras = numCameras
+        let numberOfMeshes = Int(scenePtr.pointee.mNumMeshes)
+        self.numberOfMeshes = numberOfMeshes
+        let numberOfMaterials = Int(scenePtr.pointee.mNumMaterials)
+        self.numberOfMaterials = numberOfMaterials
+        let numberOfAnimations = Int(scenePtr.pointee.mNumAnimations)
+        self.numberOfAnimations = numberOfAnimations
+        let numberOfTextures = Int(scenePtr.pointee.mNumTextures)
+        self.numberOfTextures = numberOfTextures
+        let numberOfLights = Int(scenePtr.pointee.mNumLights)
+        self.numberOfLights = numberOfLights
+        let numberOfCameras = Int(scenePtr.pointee.mNumCameras)
+        self.numberOfCameras = numberOfCameras
 
-        hasMeshes = scene.mMeshes != nil && numMeshes > 0
-        hasMaterials = scene.mMaterials != nil && numMaterials > 0
-        hasLights = scene.mLights != nil && numLights > 0
-        hasTextures = scene.mTextures != nil && numTextures > 0
-        hasCameras = scene.mCameras != nil && numCameras > 0
-        hasAnimations = scene.mAnimations != nil && numAnimations > 0
+        hasMeshes = scenePtr.pointee.mMeshes != nil && numberOfMeshes > 0
+        hasMaterials = scenePtr.pointee.mMaterials != nil && numberOfMaterials > 0
+        hasLights = scenePtr.pointee.mLights != nil && numberOfLights > 0
+        hasTextures = scenePtr.pointee.mTextures != nil && numberOfTextures > 0
+        hasCameras = scenePtr.pointee.mCameras != nil && numberOfCameras > 0
+        hasAnimations = scenePtr.pointee.mAnimations != nil && numberOfAnimations > 0
 
-        guard let node = scene.mRootNode?.pointee else {
+        guard let node = scenePtr.pointee.mRootNode?.pointee else {
             throw Error.noRootNode
         }
 
-        rootNode = AiNode(node)
+        rootNode = Node(node)
     }
 
     deinit {
-        withUnsafePointer(to: scene) {
-            aiReleaseImport($0)
-        }
+        aiReleaseImport(scenePtr)
     }
 
     /// Check whether the scene contains meshes
@@ -106,20 +104,22 @@ public final class AiScene {
     ///
     /// There will always be at least the root node if the import was successful (and no special flags have been set).
     /// Presence of further nodes depends on the format and content of the imported file.
-    public var rootNode: AiNode
+    public var rootNode: Node
 
     /// The number of meshes in the scene.
-    public var numMeshes: Int
+    public var numberOfMeshes: Int
 
     /// The array of meshes.
     /// Use the indices given in the aiNode structure to access this array.
     /// The array is mNumMeshes in size.
     ///
     /// If the AI_SCENE_FLAGS_INCOMPLETE flag is not set there will always be at least ONE material.
-    public lazy var meshes: [AiMesh] = UnsafeBufferPointer(start: scene.mMeshes, count: numMeshes).compactMap { AiMesh($0?.pointee) }
+    public lazy var meshes: [Mesh] = UnsafeBufferPointer(
+        start: scenePtr.pointee.mMeshes, count: numberOfMeshes
+    ).compactMap { Mesh($0) }
 
     /// The number of materials in the scene.
-    public var numMaterials: Int
+    public var numberOfMaterials: Int
 
     /// The array of materials.
     /// Use the index given in each aiMesh structure to access this array.
@@ -128,60 +128,68 @@ public final class AiScene {
     /// If the AI_SCENE_FLAGS_INCOMPLETE flag is not set there will always be at least ONE material.
     ///
     /// <http://assimp.sourceforge.net/lib_html/materials.html>
-    public lazy var materials: [AiMaterial] = UnsafeBufferPointer(start: scene.mMaterials, count: numMaterials).compactMap { AiMaterial($0?.pointee) }
+    public lazy var materials: [Material] = UnsafeBufferPointer(
+        start: scenePtr.pointee.mMaterials, count: numberOfMaterials
+    ).compactMap { Material($0?.pointee) }
 
     /// The number of animations in the scene.
-    public var numAnimations: Int
+    public var numberOfAnimations: Int
 
     /// The array of animations.
     /// All animations imported from the given file are listed here.
     /// The array is mNumAnimations in size.
     //  public var animations: [aiAnimation] {
-    //      guard numAnimations > 0 else {
+    //      guard numberOfAnimations > 0 else {
     //          return []
     //      }
 
-    //      let animations = (0..<numAnimations)
+    //      let animations = (0..<numberOfAnimations)
     //          .compactMap { scene.mAnimations[$0] }
     //          .map { $0.pointee } // TODO: wrap animations
 
-    //      assert(animations.count == numAnimations)
+    //      assert(animations.count == numberOfAnimations)
 
     //      return animations
     //  }
 
     /// The number of textures embedded into the file
-    public var numTextures: Int
+    public var numberOfTextures: Int
 
     /// The array of embedded textures.
     ///
     /// Not many file formats embed their textures into the file.
     /// An example is Quake's MDL format (which is also used by some GameStudio versions)
-    public lazy var textures = UnsafeBufferPointer(start: scene.mTextures, count: numTextures).compactMap { AiTexture($0?.pointee) }
+    public lazy var textures = UnsafeBufferPointer(
+        start: scenePtr.pointee.mTextures, count: numberOfTextures
+    ).compactMap { Texture($0?.pointee) }
 
     /// The number of light sources in the scene.
     /// Light sources are fully optional, in most cases this attribute will be 0.
-    public var numLights: Int
+    public var numberOfLights: Int
 
     /// The array of light sources.
     /// All light sources imported from the given file are listed here.
     /// The array is mNumLights in size.
-    public lazy var lights: [AiLight] = UnsafeBufferPointer(start: scene.mLights, count: numLights).compactMap { AiLight($0?.pointee) }
+    public lazy var lights: [Light] = UnsafeBufferPointer(
+        start: scenePtr.pointee.mLights, count: numberOfLights
+    ).compactMap { Light($0?.pointee) }
 
     /// The number of cameras in the scene.
     /// Cameras are fully optional, in most cases this attribute will be 0.
-    public var numCameras: Int
+    public var numberOfCameras: Int
 
     /// The array of cameras.
     /// All cameras imported from the given file are listed here.
     /// The array is mNumCameras in size.
     /// The first camera in the array (if existing) is the default camera view into the scene.
-    public lazy var cameras: [AiCamera] = UnsafeBufferPointer(start: scene.mCameras, count: numCameras).compactMap { AiCamera($0?.pointee) }
+    public lazy var cameras: [Camera] = UnsafeBufferPointer(
+        start: scenePtr.pointee.mCameras, count: numberOfCameras
+    ).compactMap { Camera($0?.pointee) }
 }
 
-extension AiScene {
+extension Scene {
     @inlinable
-    public func meshes(for node: AiNode) -> [AiMesh] {
+    public func meshes(for node: Node) -> [Mesh] {
         node.meshes.map { meshes[$0] }
     }
 }

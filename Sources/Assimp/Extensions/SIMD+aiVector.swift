@@ -2,7 +2,7 @@
 // simd+aiVector.swift
 // SwiftAssimp
 //
-// Copyright © 2019-2023 Christian Treffs. All rights reserved.
+// Copyright © 2019-2022 Christian Treffs. All rights reserved.
 // Licensed under BSD 3-Clause License. See LICENSE file for details.
 
 @_implementationOnly import CAssimp
@@ -35,28 +35,28 @@ extension SIMD2 where Scalar == Float {
     }
 }
 
-public typealias Vec2 = SIMD2<Float>
-public typealias Vec3 = SIMD3<Float>
+public typealias AssimpVec2 = SIMD2<Float>
+public typealias AssimpVec3 = SIMD3<Float>
 
-public typealias AiReal = Float
+public typealias AssimpReal = Float
 
-public struct AiMatrix4x4 {
-    public let a1: AiReal
-    public let a2: AiReal
-    public let a3: AiReal
-    public let a4: AiReal
-    public let b1: AiReal
-    public let b2: AiReal
-    public let b3: AiReal
-    public let b4: AiReal
-    public let c1: AiReal
-    public let c2: AiReal
-    public let c3: AiReal
-    public let c4: AiReal
-    public let d1: AiReal
-    public let d2: AiReal
-    public let d3: AiReal
-    public let d4: AiReal
+public struct Matrix4x4 {
+    public let a1: AssimpReal
+    public let a2: AssimpReal
+    public let a3: AssimpReal
+    public let a4: AssimpReal
+    public let b1: AssimpReal
+    public let b2: AssimpReal
+    public let b3: AssimpReal
+    public let b4: AssimpReal
+    public let c1: AssimpReal
+    public let c2: AssimpReal
+    public let c3: AssimpReal
+    public let c4: AssimpReal
+    public let d1: AssimpReal
+    public let d2: AssimpReal
+    public let d3: AssimpReal
+    public let d4: AssimpReal
 
     init(_ m: aiMatrix4x4) {
         a1 = m.a1

@@ -2,17 +2,20 @@
 // AiCamera.swift
 // SwiftAssimp
 //
-// Copyright © 2019-2023 Christian Treffs. All rights reserved.
+// Copyright © 2019-2022 Christian Treffs. All rights reserved.
 // Licensed under BSD 3-Clause License. See LICENSE file for details.
 
 @_implementationOnly import CAssimp
 
-public struct AiCamera {
+public class Camera {
+    private let cameraPtr: UnsafePointer<aiCamera>
+
     init(_ camera: aiCamera) {
+        cameraPtr = withUnsafePointer(to: camera) { UnsafePointer($0) }
         name = String(camera.mName)
-        position = Vec3(camera.mPosition)
-        up = Vec3(camera.mUp)
-        lookAt = Vec3(camera.mLookAt)
+        position = AssimpVec3(camera.mPosition)
+        up = AssimpVec3(camera.mUp)
+        lookAt = AssimpVec3(camera.mLookAt)
         horizontalFOV = camera.mHorizontalFOV
         clipPlaneNear = camera.mClipPlaneNear
         clipPlaneFar = camera.mClipPlaneFar
@@ -20,11 +23,10 @@ public struct AiCamera {
         orthographicWidth = camera.mOrthographicWidth
     }
 
-    init?(_ camera: aiCamera?) {
+  convenience init?(_ camera: aiCamera?) {
         guard let camera = camera else {
             return nil
         }
-
         self.init(camera)
     }
 
@@ -39,7 +41,7 @@ public struct AiCamera {
     /// defined by the corresponding node.
     ///
     /// The default value is 0|0|0.
-    public var position: Vec3
+    public var position: AssimpVec3
 
     /// 'Up' - vector of the camera coordinate system relative to
     /// the coordinate space defined by the corresponding node.
@@ -48,7 +50,7 @@ public struct AiCamera {
     /// the cross product of  the up and lookAt vectors.
     /// The default value is 0|1|0. The vector
     /// may be normalized, but it needn't.
-    public var up: Vec3
+    public var up: AssimpVec3
 
     /// 'LookAt' - vector of the camera coordinate system relative to
     /// the coordinate space defined by the corresponding node.
@@ -56,7 +58,7 @@ public struct AiCamera {
     /// This is the viewing direction of the user.
     /// The default value is 0|0|1. The vector
     /// may be normalized, but it needn't.
-    public var lookAt: Vec3
+    public var lookAt: AssimpVec3
 
     /// Horizontal field of view angle, in radians.
     ///

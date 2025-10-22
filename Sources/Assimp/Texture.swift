@@ -2,7 +2,7 @@
 // AiTexture.swift
 // SwiftAssimp
 //
-// Copyright © 2019-2023 Christian Treffs. All rights reserved.
+// Copyright © 2019-2022 Christian Treffs. All rights reserved.
 // Licensed under BSD 3-Clause License. See LICENSE file for details.
 
 @_implementationOnly import CAssimp
@@ -17,11 +17,11 @@
 /// The raw file bytes are given so the application must utilize an image decoder (e.g. DevIL) to get access to the actual color data.
 ///
 /// Embedded textures are referenced from materials using strings like "*0", "*1", etc. as the texture paths (a single asterisk character followed by the zero-based index of the texture in the aiScene::mTextures array).
-public struct AiTexture {
-    let texture: aiTexture
+public class Texture {
+    private let texturePtr: UnsafePointer<aiTexture>
 
     init(_ texture: aiTexture) {
-        self.texture = texture
+        texturePtr = withUnsafePointer(to: texture) { UnsafePointer($0) }
         filename = String(texture.mFilename)
         achFormatHint = CArray<CChar>.read(texture.achFormatHint) { body in
             guard let baseAddress = body.baseAddress else {
@@ -33,7 +33,7 @@ public struct AiTexture {
         self.width = width
         let height = Int(texture.mHeight)
         self.height = height
-        numPixels = {
+        numberOfPixels = {
             if height == 0 {
                 let sizeInBytes = width
                 return sizeInBytes / MemoryLayout<aiTexel>.stride
@@ -43,11 +43,10 @@ public struct AiTexture {
         }()
     }
 
-    init?(_ aiTexture: aiTexture?) {
+  convenience init?(_ aiTexture: aiTexture?) {
         guard let aiTexture = aiTexture else {
             return nil
         }
-
         self.init(aiTexture)
     }
 
@@ -91,7 +90,7 @@ public struct AiTexture {
     public var isCompressed: Bool { height == 0 }
 
     /// Number of pixels in texture.
-    public var numPixels: Int
+    public var numberOfPixels: Int
 
     /// Data of the texture.
     ///
@@ -101,9 +100,9 @@ public struct AiTexture {
     /// Texel layout is BGRA.
     public lazy var textureData: [UInt8] = withUnsafeTextureData([UInt8].init)
 
-    public mutating func withUnsafeTextureData<R>(_ body: (UnsafeBufferPointer<UInt8>) throws -> R) rethrows -> R {
-        let count = numPixels * 4 // aiTexel(BGRA) * numPixel
-        return try texture.pcData.withMemoryRebound(to: UInt8.self, capacity: count) { pBytes in
+    public func withUnsafeTextureData<R>(_ body: (UnsafeBufferPointer<UInt8>) throws -> R) rethrows -> R {
+        let count = numberOfPixels * 4 // aiTexel(BGRA) * numPixel
+        return try texturePtr.pointee.pcData.withMemoryRebound(to: UInt8.self, capacity: count) { pBytes in
             try body(UnsafeBufferPointer<UInt8>(start: pBytes, count: count))
         }
     }

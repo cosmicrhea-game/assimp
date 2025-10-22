@@ -2,29 +2,29 @@
 // AiMaterial.swift
 // SwiftAssimp
 //
-// Copyright © 2019-2023 Christian Treffs. All rights reserved.
+// Copyright © 2019-2022 Christian Treffs. All rights reserved.
 // Licensed under BSD 3-Clause License. See LICENSE file for details.
 
 @_implementationOnly import CAssimp
 
 // Ref: https://github.com/helix-toolkit/helix-toolkit/blob/master/Source/HelixToolkit.SharpDX.Assimp.Shared/ImporterPartial_Material.cs
-public struct AiMaterial {
-    let material: aiMaterial
+public class Material {
+    private let materialPtr: UnsafePointer<aiMaterial>
 
     init(_ material: aiMaterial) {
-        self.material = material
-        let numProperties = Int(material.mNumProperties)
-        self.numProperties = numProperties
-        let numAllocated = Int(material.mNumAllocated)
-        self.numAllocated = numAllocated
+        materialPtr = withUnsafePointer(to: material) { UnsafePointer($0) }
+        let numberOfProperties = Int(material.mNumProperties)
+        self.numberOfProperties = numberOfProperties
+        let numberAllocated = Int(material.mNumAllocated)
+        self.numberAllocated = numberAllocated
         properties = {
-            guard numProperties > 0 else {
+            guard numberOfProperties > 0 else {
                 return []
             }
-            return [AiMaterialProperty](unsafeUninitializedCapacity: numProperties) { buffer, written in
-                for idx in 0 ..< numProperties {
+            return [MaterialProperty](unsafeUninitializedCapacity: numberOfProperties) { buffer, written in
+                for idx in 0 ..< numberOfProperties {
                     if let prop = material.mProperties[idx] {
-                        buffer[idx] = AiMaterialProperty(prop.pointee)
+                        buffer[idx] = MaterialProperty(prop.pointee)
                         written += 1
                     }
                 }
@@ -32,7 +32,7 @@ public struct AiMaterial {
         }()
     }
 
-    init?(_ mat: aiMaterial?) {
+  convenience init?(_ mat: aiMaterial?) {
         guard let mat = mat else {
             return nil
         }
@@ -40,15 +40,15 @@ public struct AiMaterial {
     }
 
     /// Number of properties in the data base
-    public var numProperties: Int
+    public var numberOfProperties: Int
 
     /// Storage allocated
-    public var numAllocated: Int
+    public var numberAllocated: Int
 
     /// List of all material properties loaded.
-    public var properties: [AiMaterialProperty]
+    public var properties: [MaterialProperty]
 
-    public lazy var typedProperties: [AiMaterialPropertyIdentifiable] = properties.compactMap { prop -> AiMaterialPropertyIdentifiable? in
+    public lazy var typedProperties: [MaterialPropertyIdentifiable] = properties.compactMap { prop -> MaterialPropertyIdentifiable? in
         switch prop.type {
         case .string:
             return AiMaterialPropertyString(prop)
@@ -84,8 +84,8 @@ public struct AiMaterial {
      - aiGetMaterialUVTransform
      - aiGetMaterialXXX
      */
-    public func getMaterialProperty(_ key: AiMatKey) -> AiMaterialProperty? {
-        withUnsafePointer(to: material) { matPtr -> AiMaterialProperty? in
+    public func getMaterialProperty(_ key: MaterialKey) -> MaterialProperty? {
+        withUnsafePointer(to: materialPtr.pointee) { matPtr -> MaterialProperty? in
             let matPropPtr = UnsafeMutablePointer<UnsafePointer<aiMaterialProperty>?>.allocate(capacity: MemoryLayout<aiMaterialProperty>.stride)
             defer {
                 matPropPtr.deinitialize(count: 1)
@@ -101,19 +101,19 @@ public struct AiMaterial {
             guard result == aiReturn_SUCCESS, let property = matPropPtr.pointee?.pointee else {
                 return nil
             }
-            return AiMaterialProperty(property)
+            return MaterialProperty(property)
         }
     }
 
     /// Get the number of textures for a particular texture type.
-    public func getMaterialTextureCount(texType: AiTextureType) -> Int {
-        withUnsafePointer(to: material) {
+    public func getMaterialTextureCount(texType: TextureType) -> Int {
+        withUnsafePointer(to: materialPtr.pointee) {
             Int(aiGetMaterialTextureCount($0, texType.type))
         }
     }
 
-    public func getMaterialTexture(texType: AiTextureType, texIndex: Int) -> String? {
-        withUnsafePointer(to: material) { (matPtr: UnsafePointer<aiMaterial>) -> String? in
+    public func getMaterialTexture(texType: TextureType, texIndex: Int) -> String? {
+        withUnsafePointer(to: materialPtr.pointee) { (matPtr: UnsafePointer<aiMaterial>) -> String? in
             var path = aiString()
             // NOTE: the properties do not seem to be working
             var mapping: aiTextureMapping = aiTextureMapping_UV
@@ -141,8 +141,8 @@ public struct AiMaterial {
         }
     }
 
-    public func getMaterialString(_ key: AiMatKey) -> String? {
-        withUnsafePointer(to: material) { matPtr -> String? in
+    public func getMaterialString(_ key: MaterialKey) -> String? {
+        withUnsafePointer(to: materialPtr.pointee) { matPtr -> String? in
             var string = aiString()
             let result = aiGetMaterialString(matPtr,
                                              key.baseName,
@@ -158,8 +158,8 @@ public struct AiMaterial {
         }
     }
 
-    public func getMaterialColor(_ key: AiMatKey) -> SIMD4<AiReal>? {
-        withUnsafePointer(to: material) { matPtr in
+    public func getMaterialColor(_ key: MaterialKey) -> SIMD4<AssimpReal>? {
+        withUnsafePointer(to: materialPtr.pointee) { matPtr in
             var color = aiColor4D()
             let result = aiGetMaterialColor(matPtr,
                                             key.baseName,
@@ -173,8 +173,8 @@ public struct AiMaterial {
         }
     }
 
-    public func getMaterialFloatArray(_ key: AiMatKey) -> [AiReal]? {
-        withUnsafePointer(to: material) { matPtr in
+    public func getMaterialFloatArray(_ key: MaterialKey) -> [AssimpReal]? {
+        withUnsafePointer(to: materialPtr.pointee) { matPtr in
             let count = MemoryLayout<aiUVTransform>.stride / MemoryLayout<ai_real>.stride
             return [ai_real](unsafeUninitializedCapacity: count) { buffer, written in
                 var pMax: UInt32 = 0
@@ -193,8 +193,8 @@ public struct AiMaterial {
         }
     }
 
-    public func getMaterialIntegerArray(_ key: AiMatKey) -> [Int32] {
-        withUnsafePointer(to: material) { matPtr in
+    public func getMaterialIntegerArray(_ key: MaterialKey) -> [Int32] {
+        withUnsafePointer(to: materialPtr.pointee) { matPtr in
             [Int32](unsafeUninitializedCapacity: 4) { buffer, written in
                 var pMax: UInt32 = 0
                 let result = aiGetMaterialIntegerArray(matPtr,
@@ -214,14 +214,14 @@ public struct AiMaterial {
     }
 }
 
-extension AiMaterial {
+extension Material {
     @inlinable public var name: String? { getMaterialString(.NAME) }
 
-    @inlinable public var shadingModel: AiShadingMode? {
+    @inlinable public var shadingModel: ShadingMode? {
         guard let int = getMaterialProperty(.SHADING_MODEL)?.int.first else {
             return nil
         }
-        return AiShadingMode(rawValue: UInt32(int))
+        return ShadingMode(rawValue: UInt32(int))
     }
 
     @inlinable public var cullBackfaces: Bool? {

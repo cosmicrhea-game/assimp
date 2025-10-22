@@ -2,30 +2,33 @@
 // AiLight.swift
 // SwiftAssimp
 //
-// Copyright © 2019-2023 Christian Treffs. All rights reserved.
+// Copyright © 2019-2022 Christian Treffs. All rights reserved.
 // Licensed under BSD 3-Clause License. See LICENSE file for details.
 
 @_implementationOnly import CAssimp
 
-public struct AiLight {
+public class Light {
+    private let lightPtr: UnsafePointer<aiLight>
+
     init(_ light: aiLight) {
+        lightPtr = withUnsafePointer(to: light) { UnsafePointer($0) }
         name = String(light.mName)
-        type = AiLightSourceType(light.mType)
-        position = Vec3(light.mPosition)
-        direction = Vec3(light.mDirection)
-        up = Vec3(light.mUp)
+        type = AssimpLightSourceType(light.mType)
+        position = AssimpVec3(light.mPosition)
+        direction = AssimpVec3(light.mDirection)
+        up = AssimpVec3(light.mUp)
         attenuationConstant = light.mAttenuationConstant
         attenuationLinear = light.mAttenuationLinear
         attenuationQuadratic = light.mAttenuationQuadratic
-        colorDiffuse = Vec3(light.mColorDiffuse)
-        colorSpecular = Vec3(light.mColorSpecular)
-        colorAmbient = Vec3(light.mColorAmbient)
+        colorDiffuse = AssimpVec3(light.mColorDiffuse)
+        colorSpecular = AssimpVec3(light.mColorSpecular)
+        colorAmbient = AssimpVec3(light.mColorAmbient)
         angleInnerCone = light.mAngleInnerCone
         angleOuterCone = light.mAngleOuterCone
-        size = Vec2(light.mSize)
+        size = AssimpVec2(light.mSize)
     }
 
-    init?(_ aiLight: aiLight?) {
+  convenience init?(_ aiLight: aiLight?) {
         guard let aiLight = aiLight else {
             return nil
         }
@@ -40,27 +43,27 @@ public struct AiLight {
     public var name: String?
 
     /// The type of the light source.
-    public var type: AiLightSourceType
+    public var type: AssimpLightSourceType
 
     /// Position of the light source in space. Relative to the
     /// transformation of the node corresponding to the light.
     ///
     /// The position is undefined for directional lights.
-    public var position: Vec3
+    public var position: AssimpVec3
 
     /// Direction of the light source in space. Relative to the
     /// transformation of the node corresponding to the light.
     ///
     /// The direction is undefined for point lights. The vector
     /// may be normalized, but it needn't.
-    public var direction: Vec3
+    public var direction: AssimpVec3
 
     /// Up direction of the light source in space. Relative to the
     /// transformation of the node corresponding to the light.
     ///
     /// The direction is undefined for point lights. The vector
     /// may be normalized, but it needn't.
-    public var up: Vec3
+    public var up: AssimpVec3
 
     /// Constant light attenuation factor.
     ///
@@ -100,14 +103,14 @@ public struct AiLight {
     /// The diffuse light color is multiplied with the diffuse
     /// material color to obtain the final color that contributes
     /// to the diffuse shading term.
-    public var colorDiffuse: Vec3
+    public var colorDiffuse: AssimpVec3
 
     /// Specular color of the light source
     ///
     /// The specular light color is multiplied with the specular
     /// material color to obtain the final color that contributes
     /// to the specular shading term.
-    public var colorSpecular: Vec3
+    public var colorSpecular: AssimpVec3
 
     /// Ambient color of the light source
     ///
@@ -116,7 +119,7 @@ public struct AiLight {
     /// to the ambient shading term. Most renderers will ignore
     /// this value it, is just a remaining of the fixed-function pipeline
     /// that is still supported by quite many file formats.
-    public var colorAmbient: Vec3
+    public var colorAmbient: AssimpVec3
 
     /// Inner angle of a spot light's light cone.
     ///
@@ -137,10 +140,10 @@ public struct AiLight {
     public var angleOuterCone: Float
 
     /// Size of area light source.
-    public var size: Vec2
+    public var size: AssimpVec2
 }
 
-public enum AiLightSourceType {
+public enum AssimpLightSourceType {
     case undefined
 
     /// A directional light source has a well-defined direction

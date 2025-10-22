@@ -4,92 +4,92 @@ import Assimp
 final class AssimpTests: XCTestCase {
 
     func testFailingInitializer() {
-        XCTAssertThrowsError(try AiScene(file: "<no useful path>"))
+        XCTAssertThrowsError(try Scene(file: "<no useful path>"))
     }
 
     func testImportFormats() {
-        XCTAssertTrue(Assimp.canImportFileExtension("obj"))
-        XCTAssertTrue(Assimp.canImportFileExtension("dae"))
-        XCTAssertTrue(Assimp.canImportFileExtension("gltf"))
-        XCTAssertFalse(Assimp.canImportFileExtension("txt"))
-        XCTAssertFalse(Assimp.canImportFileExtension("psd"))
+        XCTAssertTrue(Scene.canImportFileExtension("obj"))
+        XCTAssertTrue(Scene.canImportFileExtension("dae"))
+        XCTAssertTrue(Scene.canImportFileExtension("gltf"))
+        XCTAssertFalse(Scene.canImportFileExtension("txt"))
+        XCTAssertFalse(Scene.canImportFileExtension("psd"))
 
-        XCTAssertGreaterThanOrEqual(Assimp.importFileExtensions().count, 70)
+        XCTAssertGreaterThanOrEqual(Scene.importFileExtensions().count, 70)
 
-        print(Assimp.importFileExtensions())
+        print(Scene.importFileExtensions())
     }
 
     func testExportFormats() {
-        XCTAssertGreaterThanOrEqual(Assimp.exportFileExtensions().count, 20)
+        XCTAssertGreaterThanOrEqual(Scene.exportFileExtensions().count, 20)
     }
 
-    func testLoadAiSceneDAE() throws {
+    func testLoadSceneDAE() throws {
 
         let fileURL = try Resource.load(.duck_dae)
 
-        var scene: AiScene!
-        XCTAssertNoThrow(scene = try AiScene(file: fileURL.path, flags: [.removeRedundantMaterials,
+        var scene: Scene!
+        XCTAssertNoThrow(scene = try Scene(file: fileURL.path, flags: [.removeRedundantMaterials,
                                                                          .genSmoothNormals,
                                                                          .calcTangentSpace]))
 
         XCTAssertEqual(scene.flags, [])
-        XCTAssertEqual(scene.numMeshes, 1)
-        XCTAssertEqual(scene.numMaterials, 1)
-        XCTAssertEqual(scene.numAnimations, 0)
-        XCTAssertEqual(scene.numCameras, 1)
-        XCTAssertEqual(scene.numLights, 1)
-        XCTAssertEqual(scene.numTextures, 0)
+        XCTAssertEqual(scene.numberOfMeshes, 1)
+        XCTAssertEqual(scene.numberOfMaterials, 1)
+        XCTAssertEqual(scene.numberOfAnimations, 0)
+        XCTAssertEqual(scene.numberOfCameras, 1)
+        XCTAssertEqual(scene.numberOfLights, 1)
+        XCTAssertEqual(scene.numberOfTextures, 0)
 
         // Scene Graph
 
-        XCTAssertEqual(scene.rootNode.numMeshes, 0)
+        XCTAssertEqual(scene.rootNode.numberOfMeshes, 0)
         XCTAssertEqual(scene.rootNode.meshes.count, 0)
-        XCTAssertEqual(scene.rootNode.numChildren, 3)
+        XCTAssertEqual(scene.rootNode.numberOfChildren, 3)
         XCTAssertEqual(scene.rootNode.children.count, 3)
         XCTAssertEqual(scene.rootNode.name, "VisualSceneNode")
         XCTAssertEqual(scene.rootNode.children[0].name, "LOD3sp")
         XCTAssertEqual(scene.rootNode.children[0].meshes, [0])
-        XCTAssertEqual(scene.rootNode.children[0].numMeshes, 1)
-        XCTAssertEqual(scene.rootNode.children[0].numChildren, 0)
+        XCTAssertEqual(scene.rootNode.children[0].numberOfMeshes, 1)
+        XCTAssertEqual(scene.rootNode.children[0].numberOfChildren, 0)
         XCTAssertEqual(scene.rootNode.children[1].name, "camera1")
         XCTAssertEqual(scene.rootNode.children[1].meshes, [])
-        XCTAssertEqual(scene.rootNode.children[1].numMeshes, 0)
-        XCTAssertEqual(scene.rootNode.children[1].numChildren, 0)
+        XCTAssertEqual(scene.rootNode.children[1].numberOfMeshes, 0)
+        XCTAssertEqual(scene.rootNode.children[1].numberOfChildren, 0)
         XCTAssertEqual(scene.rootNode.children[2].name, "directionalLight1")
         XCTAssertEqual(scene.rootNode.children[2].meshes, [])
-        XCTAssertEqual(scene.rootNode.children[2].numMeshes, 0)
-        XCTAssertEqual(scene.rootNode.children[2].numChildren, 0)
+        XCTAssertEqual(scene.rootNode.children[2].numberOfMeshes, 0)
+        XCTAssertEqual(scene.rootNode.children[2].numberOfChildren, 0)
 
         // Mesh
 
         XCTAssertEqual(scene.meshes[0].name, "LOD3spShape-lib")
         XCTAssertEqual(scene.meshes[0].primitiveTypes, [.triangle, .polygon])
-        XCTAssertEqual(scene.meshes[0].numVertices, 8500)
+        XCTAssertEqual(scene.meshes[0].numberOfVertices, 8500)
         XCTAssertEqual(scene.meshes[0].vertices[0...2], [-23.9364, 11.5353, 30.6125])
         XCTAssertEqual(scene.meshes[0].vertices.count, 25500)
-        XCTAssertEqual(scene.meshes[0].numFaces, 2144)
-        XCTAssertEqual(scene.meshes[0].numBones, 0)
-        XCTAssertEqual(scene.meshes[0].numAnimMeshes, 0)
+        XCTAssertEqual(scene.meshes[0].numberOfFaces, 2144)
+        XCTAssertEqual(scene.meshes[0].numberOfBones, 0)
+        XCTAssertEqual(scene.meshes[0].numberOfAnimatedMeshes, 0)
         XCTAssertEqual(scene.meshes[0].tangents.count, 25500)
         XCTAssertEqual(scene.meshes[0].bitangents.count, 25500)
 
         // Faces
 
-        XCTAssertEqual(scene.meshes[0].numFaces, 2144)
+        XCTAssertEqual(scene.meshes[0].numberOfFaces, 2144)
         XCTAssertEqual(scene.meshes[0].faces.count, 2144)
-        XCTAssertEqual(scene.meshes[0].faces[0].numIndices, 4)
+        XCTAssertEqual(scene.meshes[0].faces[0].numberOfIndices, 4)
         XCTAssertEqual(scene.meshes[0].faces[0].indices, [0, 1, 2, 3])
 
         // Materials
 
-        XCTAssertEqual(scene.materials[0].numProperties, 19)
-        XCTAssertEqual(scene.materials[0].numAllocated, 20)
+        XCTAssertEqual(scene.materials[0].numberOfProperties, 19)
+        XCTAssertEqual(scene.materials[0].numberAllocated, 20)
         XCTAssertEqual(scene.materials[0].properties[0].key, "?mat.name")
 
         // Textures
 
         XCTAssertEqual(scene.textures.count, 0)
-        XCTAssertEqual(scene.meshes[0].numUVComponents.0, 2)
+        XCTAssertEqual(scene.meshes[0].numberOfUVComponents.0, 2)
         XCTAssertEqual(scene.meshes[0].texCoords.0?.count, 25500)
         XCTAssertEqual(scene.meshes[0].texCoords.0?[0...2], [0.866606, 0.398924, 0.0])
         XCTAssertEqual(scene.meshes[0].texCoords.0?[3...5], [0.871384, 0.397619, 0.0])
@@ -110,59 +110,59 @@ final class AssimpTests: XCTestCase {
         XCTAssertEqual(scene.materials[0].getMaterialString(.TEXTURE(.diffuse, 0)), "./duckCM.tga")
     }
 
-    func testLoadAiSceneObj() throws {
+    func testLoadSceneObj() throws {
 
         let fileURL = try Resource.load(.box_obj)
 
-        let scene: AiScene = try AiScene(file: fileURL.path)
+        let scene: Scene = try Scene(file: fileURL.path)
 
         XCTAssertEqual(scene.flags, [])
-        XCTAssertEqual(scene.numMeshes, 1)
-        XCTAssertEqual(scene.numMaterials, 2)
-        XCTAssertEqual(scene.numAnimations, 0)
-        XCTAssertEqual(scene.numCameras, 0)
-        XCTAssertEqual(scene.numLights, 0)
-        XCTAssertEqual(scene.numTextures, 0)
+        XCTAssertEqual(scene.numberOfMeshes, 1)
+        XCTAssertEqual(scene.numberOfMaterials, 2)
+        XCTAssertEqual(scene.numberOfAnimations, 0)
+        XCTAssertEqual(scene.numberOfCameras, 0)
+        XCTAssertEqual(scene.numberOfLights, 0)
+        XCTAssertEqual(scene.numberOfTextures, 0)
 
         // Scene Graph
 
-        XCTAssertEqual(scene.rootNode.numMeshes, 0)
+        XCTAssertEqual(scene.rootNode.numberOfMeshes, 0)
         XCTAssertEqual(scene.rootNode.meshes.count, 0)
-        XCTAssertEqual(scene.rootNode.numChildren, 1)
+        XCTAssertEqual(scene.rootNode.numberOfChildren, 1)
         XCTAssertEqual(scene.rootNode.children.count, 1)
         XCTAssertEqual(scene.rootNode.name, "models_OBJ_box.obj.box.obj")
         XCTAssertEqual(scene.rootNode.children[0].name, "1")
         XCTAssertEqual(scene.rootNode.children[0].meshes, [0])
-        XCTAssertEqual(scene.rootNode.children[0].numMeshes, 1)
-        XCTAssertEqual(scene.rootNode.children[0].numChildren, 0)
+        XCTAssertEqual(scene.rootNode.children[0].numberOfMeshes, 1)
+        XCTAssertEqual(scene.rootNode.children[0].numberOfChildren, 0)
 
         // Mesh
 
         XCTAssertEqual(scene.meshes[0].name, "1")
         XCTAssertEqual(scene.meshes[0].primitiveTypes, [.polygon])
-        XCTAssertEqual(scene.meshes[0].numVertices, 8 * 3)
+        XCTAssertEqual(scene.meshes[0].numberOfVertices, 8 * 3)
         XCTAssertEqual(scene.meshes[0].vertices[0...2], [-0.5, 0.5, 0.5])
-        XCTAssertEqual(scene.meshes[0].numFaces, 6)
-        XCTAssertEqual(scene.meshes[0].numBones, 0)
-        XCTAssertEqual(scene.meshes[0].numAnimMeshes, 0)
+        XCTAssertEqual(scene.meshes[0].numberOfFaces, 6)
+        XCTAssertEqual(scene.meshes[0].numberOfBones, 0)
+        XCTAssertEqual(scene.meshes[0].numberOfAnimatedMeshes, 0)
 
         // Faces
 
-        XCTAssertEqual(scene.meshes[0].numFaces, 6)
+        XCTAssertEqual(scene.meshes[0].numberOfFaces, 6)
         XCTAssertEqual(scene.meshes[0].faces.count, 6)
-        XCTAssertEqual(scene.meshes[0].faces[0].numIndices, 4)
+        XCTAssertEqual(scene.meshes[0].faces[0].numberOfIndices, 4)
         XCTAssertEqual(scene.meshes[0].faces[0].indices, [0, 1, 2, 3])
 
         // Materials
 
-        XCTAssertGreaterThanOrEqual(scene.materials[0].numProperties, 12)
-        XCTAssertEqual(scene.materials[0].numAllocated, 20)
+        XCTAssertEqual(scene.materials[0].numberOfProperties, 16)
+        XCTAssertEqual(scene.materials[0].numberAllocated, 20)
         XCTAssertEqual(scene.materials[0].properties[0].key, "?mat.name")
 
         // Textures
 
         XCTAssertEqual(scene.textures.count, 0)
-        XCTAssertEqual(scene.meshes[0].numUVComponents.0, 0)
+        XCTAssertEqual(scene.meshes[0].numberOfUVComponents.0, 0)
         XCTAssertEqual(scene.meshes[0].texCoords.0?.count, nil)
 
         // Lights
@@ -174,40 +174,40 @@ final class AssimpTests: XCTestCase {
         XCTAssertEqual(scene.cameras.count, 0)
     }
 
-    func testLoadAiScene3DS() throws {
+    func testLoadScene3DS() throws {
         let fileURL = try Resource.load(.cubeDiffuseTextured_3ds)
 
-        let scene: AiScene = try AiScene(file: fileURL.path)
+        let scene: Scene = try Scene(file: fileURL.path)
 
         XCTAssertEqual(scene.flags, [])
-        XCTAssertEqual(scene.numMeshes, 1)
-        XCTAssertEqual(scene.numMaterials, 1)
-        XCTAssertEqual(scene.numAnimations, 0)
-        XCTAssertEqual(scene.numCameras, 0)
-        XCTAssertEqual(scene.numLights, 0)
-        XCTAssertEqual(scene.numTextures, 0)
+        XCTAssertEqual(scene.numberOfMeshes, 1)
+        XCTAssertEqual(scene.numberOfMaterials, 1)
+        XCTAssertEqual(scene.numberOfAnimations, 0)
+        XCTAssertEqual(scene.numberOfCameras, 0)
+        XCTAssertEqual(scene.numberOfLights, 0)
+        XCTAssertEqual(scene.numberOfTextures, 0)
 
         // Scene Graph
 
-        XCTAssertEqual(scene.rootNode.numMeshes, 0)
+        XCTAssertEqual(scene.rootNode.numberOfMeshes, 0)
         XCTAssertEqual(scene.rootNode.meshes.count, 0)
-        XCTAssertEqual(scene.rootNode.numChildren, 1)
+        XCTAssertEqual(scene.rootNode.numberOfChildren, 1)
         XCTAssertEqual(scene.rootNode.children.count, 1)
         XCTAssertEqual(scene.rootNode.name, "<3DSRoot>")
         XCTAssertEqual(scene.rootNode.children[0].name, "Quader01")
         XCTAssertEqual(scene.rootNode.children[0].meshes, [0])
-        XCTAssertEqual(scene.rootNode.children[0].numMeshes, 1)
-        XCTAssertEqual(scene.rootNode.children[0].numChildren, 0)
+        XCTAssertEqual(scene.rootNode.children[0].numberOfMeshes, 1)
+        XCTAssertEqual(scene.rootNode.children[0].numberOfChildren, 0)
 
         // Mesh
 
         XCTAssertEqual(scene.meshes[0].name, "0")
         XCTAssertEqual(scene.meshes[0].primitiveTypes, [.triangle])
-        XCTAssertEqual(scene.meshes[0].numVertices, 36)
+        XCTAssertEqual(scene.meshes[0].numberOfVertices, 36)
         XCTAssertEqual(scene.meshes[0].vertices[0...2], [-25.0, -25.0, 0.0])
-        XCTAssertEqual(scene.meshes[0].numFaces, 12)
-        XCTAssertEqual(scene.meshes[0].numBones, 0)
-        XCTAssertEqual(scene.meshes[0].numAnimMeshes, 0)
+        XCTAssertEqual(scene.meshes[0].numberOfFaces, 12)
+        XCTAssertEqual(scene.meshes[0].numberOfBones, 0)
+        XCTAssertEqual(scene.meshes[0].numberOfAnimatedMeshes, 0)
         XCTAssertEqual(scene.meshes[0].vertices[0], -25.0)
         XCTAssertEqual(scene.meshes[0].vertices[1], -25.0)
         XCTAssertEqual(scene.meshes[0].vertices[2], 0.0)
@@ -218,21 +218,21 @@ final class AssimpTests: XCTestCase {
 
         // Faces
 
-        XCTAssertEqual(scene.meshes[0].numFaces, 12)
+        XCTAssertEqual(scene.meshes[0].numberOfFaces, 12)
         XCTAssertEqual(scene.meshes[0].faces.count, 12)
-        XCTAssertEqual(scene.meshes[0].faces[0].numIndices, 3)
+        XCTAssertEqual(scene.meshes[0].faces[0].numberOfIndices, 3)
         XCTAssertEqual(scene.meshes[0].faces[0].indices, [0, 1, 2])
 
         // Materials
 
-        XCTAssertEqual(scene.materials[0].numProperties, 13)
-        XCTAssertEqual(scene.materials[0].numAllocated, 20)
+        XCTAssertEqual(scene.materials[0].numberOfProperties, 13)
+        XCTAssertEqual(scene.materials[0].numberAllocated, 20)
         XCTAssertEqual(scene.materials[0].properties[0].key, "?mat.name")
 
         // Textures
 
         XCTAssertEqual(scene.textures.count, 0)
-        XCTAssertEqual(scene.meshes[0].numUVComponents.0, 2)
+        XCTAssertEqual(scene.meshes[0].numberOfUVComponents.0, 2)
         XCTAssertEqual(scene.meshes[0].texCoords.0?.count, 108)
         XCTAssertEqual(scene.meshes[0].texCoords.0?[0...2], [0.6936096, 0.30822724, 0.0])
 
@@ -249,35 +249,35 @@ final class AssimpTests: XCTestCase {
 
     }
 
-    func testLoadAiSceneGLB() throws {
+    func testLoadSceneGLB() throws {
         let fileURL = try Resource.load(.damagedHelmet_glb)
 
-        let scene: AiScene = try AiScene(file: fileURL.path)
+        let scene: Scene = try Scene(file: fileURL.path)
 
         XCTAssertEqual(scene.flags, [])
-        XCTAssertEqual(scene.numMeshes, 1)
-        XCTAssertEqual(scene.numMaterials, 2)
-        XCTAssertEqual(scene.numAnimations, 0)
-        XCTAssertEqual(scene.numCameras, 0)
-        XCTAssertEqual(scene.numLights, 0)
-        XCTAssertEqual(scene.numTextures, 5)
+        XCTAssertEqual(scene.numberOfMeshes, 1)
+        XCTAssertEqual(scene.numberOfMaterials, 2)
+        XCTAssertEqual(scene.numberOfAnimations, 0)
+        XCTAssertEqual(scene.numberOfCameras, 0)
+        XCTAssertEqual(scene.numberOfLights, 0)
+        XCTAssertEqual(scene.numberOfTextures, 5)
 
         // Scene Graph
 
-        XCTAssertEqual(scene.rootNode.numMeshes, 1)
+        XCTAssertEqual(scene.rootNode.numberOfMeshes, 1)
         XCTAssertEqual(scene.rootNode.meshes.count, 1)
-        XCTAssertEqual(scene.rootNode.numChildren, 0)
+        XCTAssertEqual(scene.rootNode.numberOfChildren, 0)
         XCTAssertEqual(scene.rootNode.children.count, 0)
         XCTAssertEqual(scene.rootNode.name, "node_damagedHelmet_-6514")
         // Mesh
 
         XCTAssertEqual(scene.meshes[0].name, "mesh_helmet_LP_13930damagedHelmet")
         XCTAssertEqual(scene.meshes[0].primitiveTypes, [.triangle])
-        XCTAssertEqual(scene.meshes[0].numVertices, 14556)
+        XCTAssertEqual(scene.meshes[0].numberOfVertices, 14556)
         XCTAssertEqual(scene.meshes[0].vertices[0...2], [-0.61199456, -0.030940875, 0.48309004])
-        XCTAssertEqual(scene.meshes[0].numFaces, 15452)
-        XCTAssertEqual(scene.meshes[0].numBones, 0)
-        XCTAssertEqual(scene.meshes[0].numAnimMeshes, 0)
+        XCTAssertEqual(scene.meshes[0].numberOfFaces, 15452)
+        XCTAssertEqual(scene.meshes[0].numberOfBones, 0)
+        XCTAssertEqual(scene.meshes[0].numberOfAnimatedMeshes, 0)
         XCTAssertEqual(scene.meshes[0].vertices[0], -0.61199456)
         XCTAssertEqual(scene.meshes[0].vertices[1], -0.030940875)
         XCTAssertEqual(scene.meshes[0].vertices[2], 0.48309004)
@@ -288,21 +288,21 @@ final class AssimpTests: XCTestCase {
 
         // Faces
 
-        XCTAssertEqual(scene.meshes[0].numFaces, 15452)
+        XCTAssertEqual(scene.meshes[0].numberOfFaces, 15452)
         XCTAssertEqual(scene.meshes[0].faces.count, 15452)
-        XCTAssertEqual(scene.meshes[0].faces[0].numIndices, 3)
+        XCTAssertEqual(scene.meshes[0].faces[0].numberOfIndices, 3)
         XCTAssertEqual(scene.meshes[0].faces[0].indices, [0, 1, 2])
 
         // Materials
 
-        XCTAssertGreaterThanOrEqual(scene.materials[0].numProperties, 50)
-        XCTAssertEqual(scene.materials[0].numAllocated, 80)
+        XCTAssertEqual(scene.materials[0].numberOfProperties, 50)
+        XCTAssertEqual(scene.materials[0].numberAllocated, 80)
         XCTAssertEqual(scene.materials[0].properties[0].key, "?mat.name")
 
         // Textures
 
-        XCTAssertEqual(scene.textures.count, scene.numTextures)
-        XCTAssertEqual(scene.meshes[0].numUVComponents.0, 2)
+        XCTAssertEqual(scene.textures.count, scene.numberOfTextures)
+        XCTAssertEqual(scene.meshes[0].numberOfUVComponents.0, 2)
         XCTAssertEqual(scene.meshes[0].texCoords.0?.count, 43668)
         XCTAssertEqual(scene.meshes[0].texCoords.0?[0...2], [0.704686, -0.24560404, 0.0])
 
@@ -311,7 +311,7 @@ final class AssimpTests: XCTestCase {
         XCTAssertEqual(scene.textures[0].width, 935629)
         XCTAssertEqual(scene.textures[0].height, 0)
         XCTAssertEqual(scene.textures[0].isCompressed, true)
-        XCTAssertEqual(scene.textures[0].numPixels, 233907)
+        XCTAssertEqual(scene.textures[0].numberOfPixels, 233907)
         XCTAssertEqual(scene.textures[0].textureData.count, 935628)
 
         XCTAssertEqual(scene.textures[0].textureData[0], 255)
@@ -332,7 +332,7 @@ final class AssimpTests: XCTestCase {
         XCTAssertEqual(scene.textures[1].width, 1300661)
         XCTAssertEqual(scene.textures[1].height, 0)
         XCTAssertEqual(scene.textures[1].isCompressed, true)
-        XCTAssertEqual(scene.textures[1].numPixels, 325165)
+        XCTAssertEqual(scene.textures[1].numberOfPixels, 325165)
         XCTAssertEqual(scene.textures[1].textureData.count, 1300660)
         XCTAssertEqual(scene.textures[1].textureData[0], 255)
         XCTAssertEqual(scene.textures[1].textureData[1], 216)

@@ -2,12 +2,12 @@
 // AiPostProcessStep.swift
 // SwiftAssimp
 //
-// Copyright © 2019-2023 Christian Treffs. All rights reserved.
+// Copyright © 2019-2022 Christian Treffs. All rights reserved.
 // Licensed under BSD 3-Clause License. See LICENSE file for details.
 
 @_implementationOnly import CAssimp
 
-public struct AiPostProcessStep: OptionSet {
+public struct PostProcessStep: OptionSet {
     public var rawValue: UInt32
 
     public init(rawValue: UInt32) {
@@ -22,7 +22,7 @@ public struct AiPostProcessStep: OptionSet {
     /// There's an importer property, #AI_CONFIG_PP_CT_MAX_SMOOTHING_ANGLE,
     /// which allows you to specify a maximum smoothing angle for the algorithm.
     /// However, usually you'll want to leave it at the default value.
-    public static let calcTangentSpace = AiPostProcessStep(rawValue: aiProcess_CalcTangentSpace.rawValue)
+    public static let calcTangentSpace = PostProcessStep(rawValue: aiProcess_CalcTangentSpace.rawValue)
 
     /// This step removes bones losslessly or according to some threshold.
     ///
@@ -33,7 +33,7 @@ public struct AiPostProcessStep: OptionSet {
     ///
     /// Use #AI_CONFIG_PP_DB_THRESHOLD to control this.
     /// Use #AI_CONFIG_PP_DB_ALL_OR_NONE if you want bones removed if and only if all bones within the scene qualify for removal.
-    public static let debone = AiPostProcessStep(rawValue: aiProcess_Debone.rawValue)
+    public static let debone = PostProcessStep(rawValue: aiProcess_Debone.rawValue)
 
     /// This step searches all meshes for degenerate primitives and converts them to proper lines or points.
     ///
@@ -53,7 +53,7 @@ public struct AiPostProcessStep: OptionSet {
     /// Degenerate polygons are not necessarily evil and that's why they're not removed by default.
     /// There are several file formats which don't support lines or points, and some exporters bypass
     /// the format specification and write them as degenerate triangles instead.
-    public static let findDegenerates = AiPostProcessStep(rawValue: aiProcess_FindDegenerates.rawValue)
+    public static let findDegenerates = PostProcessStep(rawValue: aiProcess_FindDegenerates.rawValue)
 
     /// This step searches for duplicate meshes and replaces them with references to the first mesh.
     ///
@@ -64,7 +64,7 @@ public struct AiPostProcessStep: OptionSet {
     /// Please note that Assimp does not currently support per-node material assignment to meshes,
     /// which means that identical meshes with different materials are currently *not* joined,
     /// although this is planned for future versions.
-    public static let findInstances = AiPostProcessStep(rawValue: aiProcess_FindInstances.rawValue)
+    public static let findInstances = PostProcessStep(rawValue: aiProcess_FindInstances.rawValue)
 
     /// This step searches all meshes for invalid data, such as zeroed normal vectors
     /// or invalid UV coords and removes/fixes them.
@@ -76,7 +76,7 @@ public struct AiPostProcessStep: OptionSet {
     /// The step will also remove meshes that are infinitely small and reduce animation tracks consisting of
     /// hundreds if redundant keys to a single key.
     /// The AI_CONFIG_PP_FID_ANIM_ACCURACY config property decides the accuracy of the check for duplicate animation tracks.
-    public static let findInvalidData = AiPostProcessStep(rawValue: aiProcess_FindInvalidData.rawValue)
+    public static let findInvalidData = PostProcessStep(rawValue: aiProcess_FindInvalidData.rawValue)
 
     /// This step tries to determine which meshes have normal vectors that are facing inwards and inverts them.
     ///
@@ -86,19 +86,19 @@ public struct AiPostProcessStep: OptionSet {
     /// However, the step tries to filter such cases.
     /// The step inverts all in-facing normals.
     /// Generally it is recommended to enable this step, although the result is not always correct.
-    public static let fixInfacingNormals = AiPostProcessStep(rawValue: aiProcess_FixInfacingNormals.rawValue)
+    public static let fixInfacingNormals = PostProcessStep(rawValue: aiProcess_FixInfacingNormals.rawValue)
 
     /// This step flips all UV coordinates along the y-axis and adjusts material settings and bitangents accordingly.
     ///
     /// You'll probably want to consider this flag if you use Direct3D for rendering.
     /// The #aiProcess_ConvertToLeftHanded flag supersedes this setting and bundles
     /// all conversions typically required for D3D-based applications.
-    public static let flipUVs = AiPostProcessStep(rawValue: aiProcess_FlipUVs.rawValue)
+    public static let flipUVs = PostProcessStep(rawValue: aiProcess_FlipUVs.rawValue)
 
     /// This step adjusts the output face winding order to be CW.
     ///
     /// The default face winding order is counter clockwise (CCW).
-    public static let flipWindingOrder = AiPostProcessStep(rawValue: aiProcess_FlipWindingOrder.rawValue)
+    public static let flipWindingOrder = PostProcessStep(rawValue: aiProcess_FlipWindingOrder.rawValue)
 
     /// Generates normals for all faces of all meshes.
     ///
@@ -108,7 +108,7 @@ public struct AiPostProcessStep: OptionSet {
     /// which forces the library to duplicate vertices in some cases.
     /// #aiProcess_JoinIdenticalVertices is *senseless* then.
     /// This flag may not be specified together with #aiProcess_GenSmoothNormals.
-    public static let genNormals = AiPostProcessStep(rawValue: aiProcess_GenNormals.rawValue)
+    public static let genNormals = PostProcessStep(rawValue: aiProcess_GenNormals.rawValue)
 
     /// Generates smooth normals for all vertices in the mesh.
     /// This is ignored if normals are already there at the time this flag is evaluated.
@@ -118,7 +118,7 @@ public struct AiPostProcessStep: OptionSet {
     /// an angle maximum for the normal smoothing algorithm.
     /// Normals exceeding this limit are not smoothed, resulting in a 'hard' seam between two faces.
     /// Using a decent angle here (e.g. 80 degrees) results in very good visual appearance.
-    public static let genSmoothNormals = AiPostProcessStep(rawValue: aiProcess_GenSmoothNormals.rawValue)
+    public static let genSmoothNormals = PostProcessStep(rawValue: aiProcess_GenSmoothNormals.rawValue)
 
     /// This step converts non-UV mappings (such as spherical or cylindrical mapping) to proper texture coordinate channels.
     ///
@@ -127,14 +127,14 @@ public struct AiPostProcessStep: OptionSet {
     /// a model perfectly.
     /// It's always better to let the modelling app compute the UV channels
     /// - 3ds max, Maya, Blender, LightWave, and Modo do this for example.
-    public static let genUVCoords = AiPostProcessStep(rawValue: aiProcess_GenUVCoords.rawValue)
+    public static let genUVCoords = PostProcessStep(rawValue: aiProcess_GenUVCoords.rawValue)
 
     /// This step will perform a global scale of the model.
     ///
     /// Some importers are providing a mechanism to define a scaling unit for the model.
     /// This post processing step can be used to do so.
     /// Use #AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY to control this.
-    public static let globalScale = AiPostProcessStep(rawValue: aiProcess_GlobalScale.rawValue)
+    public static let globalScale = PostProcessStep(rawValue: aiProcess_GlobalScale.rawValue)
 
     /// Reorders triangles for better vertex cache locality.
     ///
@@ -143,7 +143,7 @@ public struct AiPostProcessStep: OptionSet {
     ///
     /// If you intend to render huge models in hardware, this step might be of interest to you.
     /// The #AI_CONFIG_PP_ICL_PTCACHE_SIZE importer property can be used to fine-tune the cache optimization.
-    public static let improveCacheLocality = AiPostProcessStep(rawValue: aiProcess_ImproveCacheLocality.rawValue)
+    public static let improveCacheLocality = PostProcessStep(rawValue: aiProcess_ImproveCacheLocality.rawValue)
 
     /// Identifies and joins identical vertex data sets within all imported meshes.
     ///
@@ -151,7 +151,7 @@ public struct AiPostProcessStep: OptionSet {
     /// You usually want to use this post processing step.
     /// If your application deals with indexed geometry, this step is compulsory or you'll just waste rendering time.
     /// If this flag is not specified, no vertices are referenced by more than one face and no index buffer is required for rendering.
-    public static let joinIdenticalVertices = AiPostProcessStep(rawValue: aiProcess_JoinIdenticalVertices.rawValue)
+    public static let joinIdenticalVertices = PostProcessStep(rawValue: aiProcess_JoinIdenticalVertices.rawValue)
 
     /// Limits the number of bones simultaneously affecting a single vertex to a maximum value.
     ///
@@ -162,7 +162,7 @@ public struct AiPostProcessStep: OptionSet {
     /// but you can use the #AI_CONFIG_PP_LBW_MAX_WEIGHTS importer property to
     /// supply your own limit to the post processing step.
     /// If you intend to perform the skinning in hardware, this post processing step might be of interest to you.
-    public static let limitBoneWeights = AiPostProcessStep(rawValue: aiProcess_LimitBoneWeights.rawValue)
+    public static let limitBoneWeights = PostProcessStep(rawValue: aiProcess_LimitBoneWeights.rawValue)
 
     /// Converts all the imported data to a left-handed coordinate space.
     ///
@@ -172,7 +172,7 @@ public struct AiPostProcessStep: OptionSet {
     ///
     /// You'll probably want to consider this flag if you use Direct3D for rendering.
     /// The #aiProcess_ConvertToLeftHanded flag supersedes this setting and bundles all conversions typically required for D3D-based applications.
-    public static let makeLeftHanded = AiPostProcessStep(rawValue: aiProcess_MakeLeftHanded.rawValue)
+    public static let makeLeftHanded = PostProcessStep(rawValue: aiProcess_MakeLeftHanded.rawValue)
 
     /// A postprocessing step to optimize the scene hierarchy.
     ///
@@ -191,14 +191,14 @@ public struct AiPostProcessStep: OptionSet {
     /// **Note**
     /// 'Crappy' scenes with thousands of extremely small meshes packed in deeply nested nodes exist for almost all file formats.
     ///  #aiProcess_OptimizeMeshes in combination with #aiProcess_OptimizeGraph usually fixes them all and makes them renderable.
-    public static let optimizeGraph = AiPostProcessStep(rawValue: aiProcess_OptimizeGraph.rawValue)
+    public static let optimizeGraph = PostProcessStep(rawValue: aiProcess_OptimizeGraph.rawValue)
 
     /// A postprocessing step to reduce the number of meshes.
     ///
     /// This will, in fact, reduce the number of draw calls.
     /// This is a very effective optimization and is recommended to be used together with #aiProcess_OptimizeGraph, if possible.
     /// The flag is fully compatible with both #aiProcess_SplitLargeMeshes and #aiProcess_SortByPType.
-    public static let optimizeMeshes = AiPostProcessStep(rawValue: aiProcess_OptimizeMeshes.rawValue)
+    public static let optimizeMeshes = PostProcessStep(rawValue: aiProcess_OptimizeMeshes.rawValue)
 
     /// Removes the node graph and pre-transforms all vertices with the local transformation matrices of their nodes.
     ///
@@ -214,7 +214,7 @@ public struct AiPostProcessStep: OptionSet {
     /// However, these artifacts are rare.
     /// **Note**
     /// The #AI_CONFIG_PP_PTV_NORMALIZE configuration property can be set to normalize the scene's spatial dimension to the -1...1 range.
-    public static let preTransformVertices = AiPostProcessStep(rawValue: aiProcess_PreTransformVertices.rawValue)
+    public static let preTransformVertices = PostProcessStep(rawValue: aiProcess_PreTransformVertices.rawValue)
 
     /// Removes some parts of the data structure (animations, materials, light sources, cameras, textures, vertex components).
     ///
@@ -234,7 +234,7 @@ public struct AiPostProcessStep: OptionSet {
     /// the data because of these nasty little vertex colors.
     /// Most apps don't even process them, so it's all for nothing.
     /// By using this step, unneeded components are excluded as early as possible thus opening more room for internal optimizations.
-    public static let removeComponent = AiPostProcessStep(rawValue: aiProcess_RemoveComponent.rawValue)
+    public static let removeComponent = PostProcessStep(rawValue: aiProcess_RemoveComponent.rawValue)
 
     /// Searches for redundant/unreferenced materials and removes them.
     ///
@@ -249,7 +249,7 @@ public struct AiPostProcessStep: OptionSet {
     /// So, if you're passing additional information through the content pipeline (probably using *magic* material names),
     /// don't specify this flag.
     /// Alternatively take a look at the #AI_CONFIG_PP_RRM_EXCLUDE_LIST importer property.
-    public static let removeRedundantMaterials = AiPostProcessStep(rawValue: aiProcess_RemoveRedundantMaterials.rawValue)
+    public static let removeRedundantMaterials = PostProcessStep(rawValue: aiProcess_RemoveRedundantMaterials.rawValue)
 
     /// This step splits meshes with more than one primitive type in homogeneous sub-meshes.
     ///
@@ -258,10 +258,10 @@ public struct AiPostProcessStep: OptionSet {
     /// This is especially useful for real-time rendering where point and line primitives are often ignored or rendered separately.
     /// You can use the #AI_CONFIG_PP_SBP_REMOVE importer property to specify which primitive types you need.
     /// This can be used to easily exclude lines and points, which are rarely used, from the import.
-    public static let sortByPType = AiPostProcessStep(rawValue: aiProcess_SortByPType.rawValue)
+    public static let sortByPType = PostProcessStep(rawValue: aiProcess_SortByPType.rawValue)
 
     /// This step splits meshes with many bones into sub-meshes so that each su-bmesh has fewer or as many bones as a given limit.
-    public static let splitByBoneCount = AiPostProcessStep(rawValue: aiProcess_SplitByBoneCount.rawValue)
+    public static let splitByBoneCount = PostProcessStep(rawValue: aiProcess_SplitByBoneCount.rawValue)
 
     /// Splits large meshes into smaller sub-meshes.
     ///
@@ -274,7 +274,7 @@ public struct AiPostProcessStep: OptionSet {
     /// The default values are #AI_SLM_DEFAULT_MAX_VERTICES and #AI_SLM_DEFAULT_MAX_TRIANGLES.
     /// Note that splitting is generally a time-consuming task, but only if there's something to split.
     /// The use of this step is recommended for most users.
-    public static let splitLargeMeshes = AiPostProcessStep(rawValue: aiProcess_SplitLargeMeshes.rawValue)
+    public static let splitLargeMeshes = PostProcessStep(rawValue: aiProcess_SplitLargeMeshes.rawValue)
 
     /// This step applies per-texture UV transformations and bakes them into stand-alone vtexture coordinate channels.
     ///
@@ -286,7 +286,7 @@ public struct AiPostProcessStep: OptionSet {
     /// **Note**
     /// UV transformations are usually implemented in real-time apps by transforming texture coordinates
     /// at vertex shader stage with a 3x3 (homogenous) transformation matrix.
-    public static let transformUVCoords = AiPostProcessStep(rawValue: aiProcess_TransformUVCoords.rawValue)
+    public static let transformUVCoords = PostProcessStep(rawValue: aiProcess_TransformUVCoords.rawValue)
 
     /// Triangulates all faces of all meshes.
     ///
@@ -296,7 +296,7 @@ public struct AiPostProcessStep: OptionSet {
     /// Line and point primitives are *not* modified! If you want 'triangles only' with no other kinds of primitives,
     /// try the following solution: Specify both #aiProcess_Triangulate and #aiProcess_SortByPType Ignore all
     /// point and line meshes when you process assimp's output
-    public static let triangulate = AiPostProcessStep(rawValue: aiProcess_Triangulate.rawValue)
+    public static let triangulate = PostProcessStep(rawValue: aiProcess_Triangulate.rawValue)
 
     /// Validates the imported scene data structure.
     /// This makes sure that all indices are valid, all animations and bones are linked correctly,
@@ -316,5 +316,5 @@ public struct AiPostProcessStep: OptionSet {
     ///
     /// This post-processing step is not time-consuming.
     /// Its use is not compulsory, but recommended.
-    public static let validateDataStructure = AiPostProcessStep(rawValue: aiProcess_ValidateDataStructure.rawValue)
+    public static let validateDataStructure = PostProcessStep(rawValue: aiProcess_ValidateDataStructure.rawValue)
 }

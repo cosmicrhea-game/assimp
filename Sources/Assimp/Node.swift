@@ -2,46 +2,46 @@
 // AiNode.swift
 // SwiftAssimp
 //
-// Copyright © 2019-2023 Christian Treffs. All rights reserved.
+// Copyright © 2019-2022 Christian Treffs. All rights reserved.
 // Licensed under BSD 3-Clause License. See LICENSE file for details.
 
 @_implementationOnly import CAssimp
 
-public struct AiNode {
-    let node: aiNode
+public class Node {
+    private let nodePtr: UnsafePointer<aiNode>
 
     init(_ node: aiNode) {
-        self.node = node
+        nodePtr = withUnsafePointer(to: node) { UnsafePointer($0) }
         name = String(node.mName)
-        transformation = AiMatrix4x4(node.mTransformation)
-        let numMeshes = Int(node.mNumMeshes)
-        self.numMeshes = numMeshes
-        let numChildren = Int(node.mNumChildren)
-        self.numChildren = numChildren
+        transformation = Matrix4x4(node.mTransformation)
+        let numberOfMeshes = Int(node.mNumMeshes)
+        self.numberOfMeshes = numberOfMeshes
+        let numberOfChildren = Int(node.mNumChildren)
+        self.numberOfChildren = numberOfChildren
         meshes = {
-            guard numMeshes > 0 else {
+            guard numberOfMeshes > 0 else {
                 return []
             }
 
-            return (0 ..< numMeshes)
+            return (0 ..< numberOfMeshes)
                 .compactMap { node.mMeshes[$0] }
                 .map { Int($0) }
         }()
 
-        if numChildren > 0 {
-            children = UnsafeBufferPointer(start: node.mChildren, count: numChildren).compactMap { AiNode($0?.pointee) }
+        if numberOfChildren > 0 {
+            children = UnsafeBufferPointer(start: node.mChildren, count: numberOfChildren).compactMap { Node($0?.pointee) }
         } else {
             children = []
         }
 
         if let meta = node.mMetaData {
-            metaData = AiMetadata(meta.pointee)
+            metadata = AssimpMetadata(meta.pointee)
         } else {
-            metaData = nil
+            metadata = nil
         }
     }
 
-    init?(_ node: aiNode?) {
+  convenience init?(_ node: aiNode?) {
         guard let node = node else {
             return nil
         }
@@ -68,23 +68,23 @@ public struct AiNode {
     public var name: String?
 
     /// The transformation relative to the node's parent.
-    public var transformation: AiMatrix4x4
+    public var transformation: Matrix4x4
 
     /// Parent node.
     ///
     /// NULL if this node is the root node.
-    public var parent: AiNode? {
-        guard let parent = node.mParent?.pointee else {
+    public var parent: Node? {
+        guard let parent = nodePtr.pointee.mParent else {
             return nil
         }
-        return AiNode(parent)
+        return Node(parent.pointee)
     }
 
     /// The number of meshes of this node.
-    public var numMeshes: Int
+    public var numberOfMeshes: Int
 
     /// The number of child nodes of this node.
-    public var numChildren: Int
+    public var numberOfChildren: Int
 
     /// The meshes of this node.
     /// Each entry is an index into the mesh list of the #aiScene.
@@ -93,32 +93,41 @@ public struct AiNode {
     /// The child nodes of this node.
     ///
     /// NULL if mNumChildren is 0.
-    public var children: [AiNode]
+    public var children: [Node]
 
     /// Metadata associated with this node or NULL if there is no metadata.
     /// Whether any metadata is generated depends on the source file format.
-    public var metaData: AiMetadata?
+    public var metadata: AssimpMetadata?
 }
 
-extension AiNode: CustomDebugStringConvertible {
+extension Node: CustomDebugStringConvertible {
+    private func debugDescription(level: Int) -> String {
+        let indent = String(repeating: "  ", count: level)
+        let header = "\(indent)<\(type(of: self)) '\(name ?? "")' meshes:\(meshes) children:\(numberOfChildren)>"
+        if children.isEmpty {
+            return header
+        } else {
+            let childDescs = children.map { $0.debugDescription(level: level + 1) }.joined(separator: "\n")
+            return "\(header)\n\(childDescs)"
+        }
+    }
+
     public var debugDescription: String {
-        """
-        <AiNode '\(name ?? "")' meshes:\(meshes) children:\(numChildren)>\n\(children.map { "\t" + $0.debugDescription }.joined())
-        """
+        return debugDescription(level: 0)
     }
 }
 
 /// Container for holding metadata.
 /// Metadata is a key-value store using string keys and values.
-public struct AiMetadata {
+public struct AssimpMetadata {
     init(_ meta: aiMetadata) {
-        numProperties = Int(meta.mNumProperties)
-        keys = UnsafeBufferPointer(start: meta.mKeys, count: numProperties).compactMap(String.init)
-        values = UnsafeBufferPointer(start: meta.mValues, count: numProperties).compactMap(Entry.init)
+        numberOfProperties = Int(meta.mNumProperties)
+        keys = UnsafeBufferPointer(start: meta.mKeys, count: numberOfProperties).compactMap(String.init)
+        values = UnsafeBufferPointer(start: meta.mValues, count: numberOfProperties).compactMap(Entry.init)
     }
 
     /// Length of the mKeys and mValues arrays, respectively
-    public var numProperties: Int
+    public var numberOfProperties: Int
 
     /// Arrays of keys, may not be NULL.
     /// Entries in this array may not be NULL as well.
@@ -129,7 +138,7 @@ public struct AiMetadata {
     public var values: [Entry]
 
     public var metadata: [String: Entry] {
-        [String: Entry](uniqueKeysWithValues: (0 ..< numProperties).map { (keys[$0], values[$0]) })
+        [String: Entry](uniqueKeysWithValues: (0 ..< numberOfProperties).map { (keys[$0], values[$0]) })
     }
 
     public enum Entry {
@@ -139,8 +148,8 @@ public struct AiMetadata {
         case float(Float)
         case double(Double)
         case string(String)
-        case vec3(Vec3)
-        case metadata(AiMetadata)
+        case vec3(AssimpVec3)
+        case metadata(AssimpMetadata)
 
         init?(_ entry: aiMetadataEntry) {
             guard let pData = entry.mData else {
@@ -170,10 +179,10 @@ public struct AiMetadata {
                 self = .string(string)
 
             case AI_AIVECTOR3D:
-                self = .vec3(Vec3(pData.bindMemory(to: aiVector3D.self, capacity: 1).pointee))
+                self = .vec3(AssimpVec3(pData.bindMemory(to: aiVector3D.self, capacity: 1).pointee))
 
             case AI_AIMETADATA:
-                self = .metadata(AiMetadata(pData.bindMemory(to: aiMetadata.self, capacity: 1).pointee))
+                self = .metadata(AssimpMetadata(pData.bindMemory(to: aiMetadata.self, capacity: 1).pointee))
 
             case AI_META_MAX:
                 return nil
