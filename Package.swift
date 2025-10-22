@@ -10,9 +10,21 @@ let package = Package(
   targets: [
     .target(
       name: "Assimp",
-      dependencies: ["CAssimp"],
+      dependencies: ["CAssimp", "CAssimpShim"],
       swiftSettings: [
         .unsafeFlags(["-enable-library-evolution"])
+      ]
+    ),
+    .target(
+      name: "CAssimpShim",
+      dependencies: ["CAssimp"],
+      path: "Sources/CAssimpShim",
+      publicHeadersPath: "include",
+      cxxSettings: [
+        .headerSearchPath("include")
+      ],
+      linkerSettings: [
+        .linkedLibrary("assimp")
       ]
     ),
     .testTarget(
@@ -25,8 +37,8 @@ let package = Package(
       pkgConfig: "assimp",
       providers: [
         .brew(["assimp"]),
-        .apt(["libassimp-dev"])
+        .apt(["libassimp-dev"]),
       ]
-    )
+    ),
   ]
 )
