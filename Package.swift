@@ -40,5 +40,6 @@ let package = Package(
         .apt(["libassimp-dev"]),
       ]
     ),
-  ]
+  ],
+  cxxLanguageStandard: .gnucxx17
 )

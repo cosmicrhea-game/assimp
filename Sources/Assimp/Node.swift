@@ -22,8 +22,12 @@ public class Node {
     }()
 
     if numberOfChildren > 0 {
-      children = UnsafeBufferPointer(start: node.mChildren, count: numberOfChildren).compactMap {
-        Node($0?.pointee)
+      if let startPtr = node.mChildren {
+        children = UnsafeBufferPointer(start: startPtr, count: numberOfChildren).compactMap {
+          Node($0?.pointee)
+        }
+      } else {
+        children = []
       }
     } else {
       children = []

@@ -93,3 +93,9 @@ public class Camera {
   /// The default value is 0 (not orthographic).
   public var orthographicWidth: Float
 }
+
+extension Camera: CustomDebugStringConvertible {
+  public var debugDescription: String {
+    "Camera(\(name ?? ""), \(position))"
+  }
+}

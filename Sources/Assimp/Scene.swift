@@ -58,6 +58,7 @@ public final class Scene {
     }
 
     rootNode = Node(node)
+    self.filePath = filePath
   }
 
   public convenience init(file filePath: String, flags: PostProcessStep = []) throws {
@@ -102,6 +103,9 @@ public final class Scene {
   /// There will always be at least the root node if the import was successful (and no special flags have been set).
   /// Presence of further nodes depends on the format and content of the imported file.
   public var rootNode: Node
+
+  /// The file path of the scene.
+  public let filePath: String
 
   /// The number of meshes in the scene.
   public var numberOfMeshes: Int

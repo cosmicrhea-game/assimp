@@ -1,10 +1,10 @@
 @_implementationOnly import CAssimp
 
 public class NodeAnimation {
-  private let channelPtr: UnsafePointer<aiNodeAnim>
+  private let channelData: aiNodeAnim
 
   init(_ channel: aiNodeAnim) {
-    channelPtr = withUnsafePointer(to: channel) { UnsafePointer($0) }
+    channelData = channel
     nodeName = String(channel.mNodeName)
     numberOfPositionKeys = Int(channel.mNumPositionKeys)
     numberOfRotationKeys = Int(channel.mNumRotationKeys)
@@ -25,8 +25,8 @@ public class NodeAnimation {
   public var numberOfPositionKeys: Int
   public lazy var positionKeys: [VectorKey] = {
     guard numberOfPositionKeys > 0 else { return [] }
-    let ch = channelPtr.pointee
-    return UnsafeBufferPointer(start: ch.mPositionKeys, count: numberOfPositionKeys).map(
+    guard let startPtr = channelData.mPositionKeys else { return [] }
+    return UnsafeBufferPointer(start: startPtr, count: numberOfPositionKeys).map(
       VectorKey.init)
   }()
 
@@ -34,8 +34,8 @@ public class NodeAnimation {
   public var numberOfRotationKeys: Int
   public lazy var rotationKeys: [QuatKey] = {
     guard numberOfRotationKeys > 0 else { return [] }
-    let ch = channelPtr.pointee
-    return UnsafeBufferPointer(start: ch.mRotationKeys, count: numberOfRotationKeys).map(
+    guard let startPtr = channelData.mRotationKeys else { return [] }
+    return UnsafeBufferPointer(start: startPtr, count: numberOfRotationKeys).map(
       QuatKey.init)
   }()
 
@@ -43,14 +43,20 @@ public class NodeAnimation {
   public var numberOfScalingKeys: Int
   public lazy var scalingKeys: [VectorKey] = {
     guard numberOfScalingKeys > 0 else { return [] }
-    let ch = channelPtr.pointee
-    return UnsafeBufferPointer(start: ch.mScalingKeys, count: numberOfScalingKeys).map(
+    guard let startPtr = channelData.mScalingKeys else { return [] }
+    return UnsafeBufferPointer(start: startPtr, count: numberOfScalingKeys).map(
       VectorKey.init)
   }()
 
   /// Defines how the animation behaves before the first and after the last key.
   public var preState: AnimationBehavior
   public var postState: AnimationBehavior
+}
+
+extension NodeAnimation: CustomDebugStringConvertible {
+  public var debugDescription: String {
+    "NodeAnimation(nodeName: '\(nodeName ?? "")'; numberOfPositionKeys: \(numberOfPositionKeys); numberOfRotationKeys: \(numberOfRotationKeys); numberOfScalingKeys: \(numberOfScalingKeys))"
+  }
 }
 
 public enum AnimationBehavior {

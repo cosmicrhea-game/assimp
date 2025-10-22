@@ -2,12 +2,21 @@
 
 public class Bone {
   private let bonePtr: UnsafePointer<aiBone>
+  private let _weights: [VertexWeight]
 
   init(_ bone: aiBone) {
     bonePtr = withUnsafePointer(to: bone) { UnsafePointer($0) }
     name = String(bone.mName)
     offsetMatrix = Matrix4x4(bone.mOffsetMatrix)
     numberOfWeights = Int(bone.mNumWeights)
+
+    // Copy bone weights immediately to avoid memory ownership issues
+    if numberOfWeights > 0, let startPtr = bone.mWeights {
+      let buffer = UnsafeBufferPointer(start: startPtr, count: numberOfWeights)
+      _weights = buffer.map(VertexWeight.init)
+    } else {
+      _weights = []
+    }
   }
 
   convenience init?(_ bone: aiBone?) {
@@ -29,11 +38,9 @@ public class Bone {
   public var numberOfWeights: Int
 
   /// The vertex weights of this bone.
-  public lazy var weights: [VertexWeight] = {
-    guard numberOfWeights > 0 else { return [] }
-    let bone = bonePtr.pointee
-    return UnsafeBufferPointer(start: bone.mWeights, count: numberOfWeights).map(VertexWeight.init)
-  }()
+  public var weights: [VertexWeight] {
+    return _weights
+  }
 }
 
 public struct VertexWeight {

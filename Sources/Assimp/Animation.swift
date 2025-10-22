@@ -1,10 +1,10 @@
 @_implementationOnly import CAssimp
 
 public class Animation {
-  private let animPtr: UnsafePointer<aiAnimation>
+  private let animData: aiAnimation
 
   init(_ anim: aiAnimation) {
-    animPtr = withUnsafePointer(to: anim) { UnsafePointer($0) }
+    animData = anim
     name = String(anim.mName)
     duration = anim.mDuration
     ticksPerSecond = anim.mTicksPerSecond
@@ -31,8 +31,8 @@ public class Animation {
   public var numberOfChannels: Int
   public lazy var channels: [NodeAnimation] = {
     guard numberOfChannels > 0 else { return [] }
-    let a = animPtr.pointee
-    return UnsafeBufferPointer(start: a.mChannels, count: numberOfChannels)
+    guard let startPtr = animData.mChannels else { return [] }
+    return UnsafeBufferPointer(start: startPtr, count: numberOfChannels)
       .compactMap { $0?.pointee }
       .map(NodeAnimation.init)
   }()
@@ -41,4 +41,10 @@ public class Animation {
   public var numberOfMeshChannels: Int
   /// Morph mesh channels are currently unsupported in this wrapper.
   public var numberOfMorphMeshChannels: Int
+}
+
+extension Animation: CustomDebugStringConvertible {
+  public var debugDescription: String {
+    "Animation('\(name ?? "")'; ticks: \(duration); channels: \(numberOfChannels))"
+  }
 }
