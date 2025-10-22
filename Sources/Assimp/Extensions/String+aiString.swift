@@ -2,18 +2,25 @@
 
 extension String {
   init?(_ aiString: aiString) {
-    // aiString.data is already a C-string, just convert it directly
-    guard aiString.length > 0 else {
+    let length = Int(aiString.length)
+    guard length > 0 else {
       return nil
     }
 
-    // aiString.data is a fixed-size array that contains the string data
-    // We can treat it as a C-string by taking the address
-    let cString = withUnsafePointer(to: aiString.data) { dataPtr in
-      UnsafeRawPointer(dataPtr).assumingMemoryBound(to: CChar.self)
+    // Read exactly `length` bytes from the fixed-size inline buffer to avoid
+    // relying on a trailing NUL, which may be omitted or optimized differently
+    // in some builds. Decode as UTF-8.
+    let result: String? = withUnsafeBytes(of: aiString.data) { rawBuffer in
+      guard let baseAddress = rawBuffer.baseAddress?.assumingMemoryBound(to: UInt8.self) else {
+        return nil
+      }
+      return String(
+        bytes: UnsafeBufferPointer(start: baseAddress, count: length),
+        encoding: .utf8)
     }
 
-    self.init(cString: cString)
+    guard let result else { return nil }
+    self = result
   }
 
   init?(bytes: UnsafeMutablePointer<Int8>, length: Int) {
