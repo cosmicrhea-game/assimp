@@ -42,3 +42,4 @@ public class Animation {
   /// Morph mesh channels are currently unsupported in this wrapper.
   public var numberOfMorphMeshChannels: Int
 }
+

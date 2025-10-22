@@ -90,3 +90,4 @@ public struct QuatKey {
     value = SIMD4<Float>(k.mValue.x, k.mValue.y, k.mValue.z, k.mValue.w)
   }
 }
+

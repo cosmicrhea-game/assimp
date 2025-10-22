@@ -45,3 +45,4 @@ public struct VertexWeight {
     weight = w.mWeight
   }
 }
+

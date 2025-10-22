@@ -1,5 +1,5 @@
-import Foundation
 @_implementationOnly import CAssimp
+import Foundation
 
 /// Helper structure to describe an embedded texture
 ///
@@ -98,7 +98,10 @@ public class Texture {
   public func withUnsafeTextureData<R>(_ body: (UnsafeBufferPointer<UInt8>) throws -> R) rethrows
     -> R
   {
-    let count = numberOfPixels * 4  // aiTexel(BGRA) * numPixel
+    // For uncompressed textures, pcData is an array of aiTexel (BGRA) with
+    // numberOfPixels elements. For compressed textures (height == 0), pcData
+    // is a byte buffer of size `width`.
+    let count: Int = isCompressed ? width : (numberOfPixels * 4)
     guard let pcData = texturePtr.pointee.pcData else {
       return try body(UnsafeBufferPointer(start: nil, count: 0))
     }
@@ -110,7 +113,7 @@ public class Texture {
 }
 
 #if canImport(Darwin)
-@available(macOS 12.0, *)
+  @available(macOS 12.0, *)
 #endif
 extension Texture: CustomDebugStringConvertible {
   public var debugDescription: String {
