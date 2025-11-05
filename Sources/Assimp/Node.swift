@@ -3,8 +3,10 @@
 public class Node {
   private let nodePtr: UnsafePointer<aiNode>
 
-  init(_ node: aiNode) {
-    nodePtr = withUnsafePointer(to: node) { UnsafePointer($0) }
+  /// Initialize from a pointer (preferred - maintains correct memory ownership)
+  init(_ nodePtr: UnsafePointer<aiNode>) {
+    self.nodePtr = nodePtr
+    let node = nodePtr.pointee
     name = String(node.mName)
     transformation = Matrix4x4(node.mTransformation)
     let numberOfMeshes = Int(node.mNumMeshes)
@@ -24,7 +26,8 @@ public class Node {
     if numberOfChildren > 0 {
       if let startPtr = node.mChildren {
         children = UnsafeBufferPointer(start: startPtr, count: numberOfChildren).compactMap {
-          Node($0?.pointee)
+          guard let childPtr = $0 else { return nil }
+          return Node(childPtr)
         }
       } else {
         children = []
@@ -34,17 +37,18 @@ public class Node {
     }
 
     if let meta = node.mMetaData {
-      metadata = AssimpMetadata(meta.pointee)
+      metadata = SceneMetadata(meta.pointee)
     } else {
       metadata = nil
     }
   }
 
-  convenience init?(_ node: aiNode?) {
-    guard let node = node else {
+  /// Initialize from a node pointer (nullable)
+  convenience init?(_ nodePtr: UnsafePointer<aiNode>?) {
+    guard let nodePtr = nodePtr else {
       return nil
     }
-    self.init(node)
+    self.init(nodePtr)
   }
 
   /// The name of the node.
@@ -73,10 +77,10 @@ public class Node {
   ///
   /// NULL if this node is the root node.
   public var parent: Node? {
-    guard let parent = nodePtr.pointee.mParent else {
+    guard let parentPtr = nodePtr.pointee.mParent else {
       return nil
     }
-    return Node(parent.pointee)
+    return Node(parentPtr)
   }
 
   /// The number of meshes of this node.
@@ -96,31 +100,71 @@ public class Node {
 
   /// Metadata associated with this node or NULL if there is no metadata.
   /// Whether any metadata is generated depends on the source file format.
-  public var metadata: AssimpMetadata?
+  public var metadata: SceneMetadata?
 }
 
 extension Node: CustomDebugStringConvertible {
   private func debugDescription(level: Int) -> String {
     let indent = String(repeating: "  ", count: level)
     let header =
-      "\(indent)<\(type(of: self)) '\(name ?? "")' meshes:\(meshes) children:\(numberOfChildren)>"
+      "\(indent)<\(type(of: self)) '\(name ?? "")' meshes:\(meshes) children:\(numberOfChildren) metadata:\(metadata?.numberOfProperties ?? 0)>"
+
     if children.isEmpty {
       return header
     } else {
-      let childDescs = children.map { $0.debugDescription(level: level + 1) }.joined(
-        separator: "\n")
-      return "\(header)\n\(childDescs)"
+      let childDescriptions =
+        children
+        .map { $0.debugDescription(level: level + 1) }
+        .joined(separator: "\n")
+
+      return "\(header)\n\(childDescriptions)"
     }
   }
 
   public var debugDescription: String {
-    return debugDescription(level: 0)
+    debugDescription(level: 0)
+  }
+}
+
+extension Node {
+  /// Recursively find a node by name in the node hierarchy
+  public func findNode(named nodeName: String) -> Node? {
+    // Check if this node matches
+    if name == nodeName {
+      return self
+    }
+
+    // Recursively search children
+    for child in children {
+      if let found = child.findNode(named: nodeName) {
+        return found
+      }
+    }
+
+    return nil
+  }
+
+  /// Recursively find all nodes matching a name pattern
+  public func findAllNodes(named nodeName: String) -> [Node] {
+    var results: [Node] = []
+
+    // Check if this node matches
+    if name == nodeName {
+      results.append(self)
+    }
+
+    // Recursively search children
+    for child in children {
+      results.append(contentsOf: child.findAllNodes(named: nodeName))
+    }
+
+    return results
   }
 }
 
 /// Container for holding metadata.
 /// Metadata is a key-value store using string keys and values.
-public struct AssimpMetadata {
+public struct SceneMetadata {
   init(_ meta: aiMetadata) {
     numberOfProperties = Int(meta.mNumProperties)
     keys = UnsafeBufferPointer(start: meta.mKeys, count: numberOfProperties).compactMap(String.init)
@@ -151,7 +195,7 @@ public struct AssimpMetadata {
     case double(Double)
     case string(String)
     case vec3(AssimpVec3)
-    case metadata(AssimpMetadata)
+    case metadata(SceneMetadata)
 
     init?(_ entry: aiMetadataEntry) {
       guard let pData = entry.mData else {
@@ -184,7 +228,7 @@ public struct AssimpMetadata {
         self = .vec3(AssimpVec3(pData.bindMemory(to: aiVector3D.self, capacity: 1).pointee))
 
       case AI_AIMETADATA:
-        self = .metadata(AssimpMetadata(pData.bindMemory(to: aiMetadata.self, capacity: 1).pointee))
+        self = .metadata(SceneMetadata(pData.bindMemory(to: aiMetadata.self, capacity: 1).pointee))
 
       case AI_META_MAX:
         return nil
