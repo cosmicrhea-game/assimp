@@ -28,9 +28,9 @@ public final class Scene {
     self.scenePtr = scenePtr
     let flags = Flags(rawValue: Int32(scenePtr.pointee.mFlags))
 
-    if flags.contains(.incomplete) {
-      throw Error.importIncomplete(filePath)
-    }
+    // if flags.contains(.incomplete) {
+    //   throw Error.importIncomplete(filePath)
+    // }
     self.flags = flags
 
     let numberOfMeshes = Int(scenePtr.pointee.mNumMeshes)
@@ -53,11 +53,11 @@ public final class Scene {
     hasCameras = scenePtr.pointee.mCameras != nil && numberOfCameras > 0
     hasAnimations = scenePtr.pointee.mAnimations != nil && numberOfAnimations > 0
 
-    guard let node = scenePtr.pointee.mRootNode?.pointee else {
+    guard let rootNodePtr = scenePtr.pointee.mRootNode else {
       throw Error.noRootNode
     }
 
-    rootNode = Node(node)
+    rootNode = Node(rootNodePtr)
     self.filePath = filePath
   }
 
@@ -114,7 +114,7 @@ public final class Scene {
   /// Use the indices given in the aiNode structure to access this array.
   /// The array is mNumMeshes in size.
   ///
-  /// If the AI_SCENE_FLAGS_INCOMPLETE flag is not set there will always be at least ONE material.
+  /// If the AI_SCENE_FLAGS_INCOMPLETE flag is not set there will always be at least one mesh.
   public lazy var meshes: [Mesh] = UnsafeBufferPointer(
     start: scenePtr.pointee.mMeshes, count: numberOfMeshes
   ).compactMap { Mesh($0) }
@@ -126,7 +126,7 @@ public final class Scene {
   /// Use the index given in each aiMesh structure to access this array.
   /// The array is mNumMaterials in size.
   ///
-  /// If the AI_SCENE_FLAGS_INCOMPLETE flag is not set there will always be at least ONE material.
+  /// If the AI_SCENE_FLAGS_INCOMPLETE flag is not set there will always be at least one material.
   ///
   /// <http://assimp.sourceforge.net/lib_html/materials.html>
   public lazy var materials: [Material] = UnsafeBufferPointer(

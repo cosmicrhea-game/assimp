@@ -6,6 +6,7 @@
 #include <assimp/DefaultLogger.hpp>
 #include <mutex>
 #include <string>
+#include <memory>
 
 namespace {
 

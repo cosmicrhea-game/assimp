@@ -96,6 +96,6 @@ public class Camera {
 
 extension Camera: CustomDebugStringConvertible {
   public var debugDescription: String {
-    "Camera(\(name ?? ""), \(position))"
+    "Camera(name: \(name ?? "nil"), position: \(position), up: \(up), lookAt: \(lookAt), fov: \(horizontalFOV), aspect: \(aspect), near: \(clipPlaneNear), far: \(clipPlaneFar), orthoWidth: \(orthographicWidth))"
   }
 }
